@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="トリミングログ">
+<meta name="theme-color" content="#ffffff">
+<title>トリミングログ</title>
+<style>
+:root{--main:#e8758f;--bg:#fff7f8;--text:#333;--sub:#888}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Hiragino Sans",sans-serif;background:var(--bg);color:var(--text);padding-bottom:env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:#fff;border-bottom:1px solid #f0d5db;position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;flex:1}
+main{padding:16px;max-width:600px;margin:0 auto}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--main);color:#fff;font-size:16px;font-weight:bold;margin:8px 0}
+a.btn{text-align:center;text-decoration:none}
+.btn.sub{background:#fff;color:var(--main);border:2px solid var(--main)}
+.btn.danger{background:#fff;color:#d33;border:2px solid #d33}
+.back{background:none;border:none;font-size:16px;color:var(--main);padding:0}
+.card{background:#fff;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+label{display:block;font-size:13px;color:var(--sub);margin:12px 0 4px}
+.req{color:#d33;font-weight:bold;font-size:12px;margin-left:4px}
+input,select,textarea{width:100%;padding:12px;font-size:16px;border:1px solid #ddd;border-radius:10px;background:#fff;font-family:inherit;color:var(--text)}
+textarea{min-height:90px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.photo{aspect-ratio:3/4;background:#f3e3e6;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--sub);overflow:hidden;font-size:13px;text-align:center}
+.photo img{width:100%;height:100%;object-fit:cover}
+.count{font-size:40px;font-weight:bold;color:var(--main)}
+.muted{color:var(--sub);font-size:13px}
+.pre{white-space:pre-wrap}
+.tag{display:inline-block;padding:6px 12px;margin:4px;border-radius:20px;border:1px solid var(--main);color:var(--main);font-size:14px}
+.tag.off{border-color:#ccc;color:#bbb;text-decoration:line-through}
+.chip{display:inline-block;padding:8px 12px;margin:4px 4px 0 0;border-radius:20px;border:1px solid #ddd;color:#888;font-size:14px;background:#fff}
+.chip.on{background:var(--main);border-color:var(--main);color:#fff}
+.list-item{display:flex;align-items:center;gap:12px}
+.list-item .photo{width:56px;flex:none;border-radius:8px}
+.minicall{flex:none;padding:8px 14px;border:2px solid var(--main);border-radius:10px;color:var(--main);font-weight:bold;text-decoration:none;font-size:14px}
+.order{position:fixed;inset:0;background:#fff;z-index:20;overflow:auto;padding:calc(20px + env(safe-area-inset-top)) 20px 40px}
+.order .memo{font-size:26px;line-height:1.6;white-space:pre-wrap;font-weight:bold;margin-top:16px}
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:12px 18px;border-radius:24px;font-size:14px;z-index:50;max-width:90%;text-align:center}
+#cmp{display:block;margin:12px auto 4px;width:auto;height:auto;max-width:100%;max-height:62vh;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.15);touch-action:none;-webkit-user-select:none;user-select:none}
+.remrow{display:flex;gap:8px;align-items:center;margin:6px 0}
+.remrow select{flex:1.2}.remrow input{flex:1}
+.remrow button{flex:none;width:44px;height:44px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#d33;font-size:18px}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:10px;border-radius:10px;border:2px solid var(--main);background:#fff;color:var(--main);font-size:14px;font-weight:bold}
+.seg button.on{background:var(--main);color:#fff}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const APP_NAME='トリミングログ';
+const APP_TAG='#トリミングログ';
+const DAYS=[0,1,2,3,5,7,10,14,21,30];
+const DEF_REM=[{d:1,t:'20:00'},{d:0,t:'09:00'}];
+const MENUS=['カット','シャンプー','部分カット','爪切り','耳そうじ','肛門腺しぼり','歯みがき','パック・スパ'];
+const CONDS=['元気','いつも通り','少し元気がない','体調が悪い'];
+const STYLES=[{name:'ピンク',bg:'#fff7f8',text:'#e8758f',label:'#e8758f',labelText:'#fff'},{name:'ダーク',bg:'#2b2b2b',text:'#fff',label:'#f7c948',labelText:'#2b2b2b'}];
+const SIZES={post:'投稿用（縦4:5）',story:'ストーリー・リール用'};
+const MODES={both:'ビフォー＋アフター',after:'アフターだけ'};
+const FONT='-apple-system,"Hiragino Sans",sans-serif';
+const WD='日月火水木金土';
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const p2=n=>String(n).padStart(2,'0');
+const clone=o=>JSON.parse(JSON.stringify(o));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
+const fmtDate=s=>s?s.replace(/-/g,'/'):'';
+const fmtDT=s=>{if(!s)return'';const d=new Date(s);return `${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]}) ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+const yen=p=>p?'¥'+Number(p).toLocaleString():'';
+const dayLabel=d=>d===0?'当日':d+'日前';
+const validRems=list=>(Array.isArray(list)?list:[]).filter(o=>o&&typeof o==='object'&&typeof o.d==='number');
+const memoOf=r=>r.memo??r.order??r.note??'';
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3500)}
+
+/* ---- 保存（IndexedDB） ---- */
+let db;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('trimlog',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
+function dbGet(k){return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function dbSet(k,v){return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+function dbDel(k){return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+
+let S={dogs:[],places:[],records:[],settings:{defRem:clone(DEF_REM)}};
+const imgCache=new Map();
+const save=()=>dbSet('state',S);
+async function putImg(data){const id='img_'+uid();await dbSet(id,data);imgCache.set(id,data);return id}
+async function getImg(id){if(!id)return null;if(imgCache.has(id))return imgCache.get(id);const v=await dbGet(id);if(v)imgCache.set(id,v);return v}
+async function delImg(id){if(id){await dbDel(id);imgCache.delete(id)}}
+async function hydrate(){for(const el of document.querySelectorAll('img[data-img]')){const v=await getImg(el.dataset.img);if(v)el.src=v}}
+
+const dog=id=>S.dogs.find(d=>d.id===id);
+const place=id=>S.places.find(p=>p.id===id)||S.places[0];
+const recOf=id=>S.records.find(r=>r.id===id);
+const recsOf=dogId=>S.records.filter(r=>r.dogId===dogId).sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
+const cover=r=>r.after||r.before;
+const normTags=s=>[...new Set(String(s).split(/[\s,、　]+/).filter(Boolean).map(t=>'#'+t.replace(/^[#＃]+/,'')).filter(t=>t.length>1))].slice(0,5);
+const tagsOf=p=>!p?[]:Array.isArray(p.tags)?p.tags:normTags(p.tags||'');
+
+/* ---- お店の情報（電話・営業時間） ---- */
+const telHref=t=>'tel:'+String(t||'').replace(/[^\d+]/g,'');
+function placeBtns(p){if(!p||p.id==='home')return'';
+  return `${p.hours?`<div class="muted pre" style="margin-top:8px">営業時間・定休日：${esc(p.hours)}</div>`:''}${p.tel?`<a class="btn sub" href="${telHref(p.tel)}">電話する（${esc(p.tel)}）</a>`:''}`}
+
+/* ---- 写真（切り抜かずに保存） ---- */
+function pickFile(accept){return new Promise(res=>{const i=document.createElement('input');i.type='file';if(accept)i.accept=accept;i.style.display='none';document.body.appendChild(i);i.onchange=()=>{res(i.files[0]||null);i.remove()};i.click()})}
+function loadSrc(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
+async function toPhoto(file){
+  const url=URL.createObjectURL(file);
+  try{const im=await loadSrc(url);const r=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight));
+    const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*r);c.height=Math.round(im.naturalHeight*r);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',0.85)}
+  finally{URL.revokeObjectURL(url)}
+}
+
+/* ---- 画面の切り替え ---- */
+const V={},AFTER={};
+let view='home',param=null;
+function go(v,p){view=v;param=p;window.scrollTo(0,0);render()}
+function render(){$('#app').innerHTML=V[view](param);hydrate();if(AFTER[view])AFTER[view](param)}
+function shell(title,body,back="go('home')"){return `<header>${back?`<button class="back" onclick="${back}">‹ 戻る</button>`:''}<h1>${esc(title)}</h1></header><main>${body}</main>`}
+const installHint=()=>navigator.standalone?'':`<div class="card muted">Safariの共有ボタンから「ホーム画面に追加」すると、アプリのように使えて、データも消えにくくなります。</div>`;
+
+/* ---- 通知の編集 ---- */
+const remEditor=list=>`<div>${list.map((r,i)=>`<div class="remrow"><select class="rem_d">${DAYS.map(d=>`<option value="${d}" ${d===r.d?'selected':''}>${dayLabel(d)}</option>`).join('')}</select><input type="time" class="rem_t" value="${esc(r.t)}"><button onclick="delRem(${i})">✕</button></div>`).join('')||'<p class="muted">通知なし</p>'}</div><button class="btn sub" onclick="addRem()">＋ 通知を追加</button>`;
+function readRems(){return [...document.querySelectorAll('.remrow')].map(el=>({d:Number(el.querySelector('.rem_d').value),t:el.querySelector('.rem_t').value||'09:00'}))}
+let RD=null,D=null;
+function remList(){if(view==='recEdit'){syncD();return D.rem}RD=readRems();return RD}
+function addRem(){remList().push({d:0,t:'09:00'});render()}
+function delRem(i){remList().splice(i,1);render()}
+
+/* ホーム */
+V.home=()=>{
+  if(!S.dogs.length)return shell(APP_NAME,`<div class="card"><p>まずはワンちゃんを登録しましょう。</p><button class="btn" onclick="go('dogEdit')">ワンちゃんを登録する</button></div>${installHint()}`,'');
+  const now=new Date();
+  const ups=S.records.filter(r=>r.nextAt&&new Date(r.nextAt)>now).sort((a,b)=>a.nextAt.localeCompare(b.nextAt));
+  const next=ups[0];
+  let nx='<div class="muted">次回の予約はまだありません</div>';
+  if(next){const n=new Date(next.nextAt);const days=Math.round((new Date(n.getFullYear(),n.getMonth(),n.getDate())-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/86400000);const pl=place(next.placeId);
+    nx=`<div class="muted">次回の予約（${esc(dog(next.dogId)?.name)}）</div><div class="count">${days===0?'今日':'あと'+days+'日'}</div><div style="font-size:18px;font-weight:bold">${fmtDT(next.nextAt)}</div><div>${esc(pl.name)}</div>${placeBtns(pl)}`;
+    const more=ups.slice(1).map(r=>{const p=place(r.placeId);return `<div class="list-item" style="padding:10px 0;border-top:1px solid #f3e3e6"><div style="flex:1" onclick="go('rec','${r.id}')"><b>${fmtDT(r.nextAt)}</b><div class="muted">${esc(dog(r.dogId)?.name)}・${esc(p.name)}</div></div>${p.tel&&p.id!=='home'?`<a class="minicall" href="${telHref(p.tel)}">電話</a>`:''}</div>`}).join('');
+    if(more)nx+=`<div class="muted" style="margin-top:14px">そのあとの予約</div>${more}`}
+  const dogs=S.dogs.map(d=>{const r=recsOf(d.id)[0];const days=r?Math.round((new Date(today())-new Date(r.date))/86400000):0;
+    return `<div class="card list-item" onclick="go('history','${d.id}')"><div class="photo">${r&&cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b>${esc(d.name)}</b><div class="muted">${r?`前回 ${fmtDate(r.date)}（${days}日前）`:'まだ記録がありません'}</div></div><span class="muted">›</span></div>`}).join('');
+  return shell(APP_NAME,`<div class="card">${nx}</div><button class="btn" onclick="newRec()">記録する</button>${dogs}<button class="btn sub" onclick="go('dogEdit')">＋ ワンちゃんを追加</button><button class="btn sub" onclick="go('shops')">お店の登録・編集</button><button class="btn sub" onclick="openSettings()">設定</button>${installHint()}`,'');
+};
+
+/* ワンちゃん */
+V.dogEdit=id=>{const d=dog(id)||{};return shell(id?'ワンちゃんの編集':'ワンちゃんの登録',`<label>名前</label><input id="f_name" value="${esc(d.name)}" placeholder="例：モカ"><label>犬種（任意）</label><input id="f_breed" value="${esc(d.breed)}" placeholder="例：トイプードル"><button class="btn" onclick="saveDog('${id||''}')">保存する</button>${id?`<button class="btn danger" onclick="delDog('${id}')">このワンちゃんを削除</button>`:''}`,id?`go('history','${id}')`:"go('home')")};
+async function saveDog(id){const name=$('#f_name').value.trim();if(!name)return toast('名前を入れてください');const breed=$('#f_breed').value.trim();if(id)Object.assign(dog(id),{name,breed});else S.dogs.push({id:uid(),name,breed});await save();go('home')}
+async function delDog(id){if(!confirm('このワンちゃんと、すべての記録を削除します。よろしいですか？'))return;for(const r of S.records.filter(r=>r.dogId===id)){await delImg(r.before);await delImg(r.after)}S.records=S.records.filter(r=>r.dogId!==id);S.dogs=S.dogs.filter(d=>d.id!==id);await save();go('home')}
+
+/* お店の一覧・登録 */
+V.shops=()=>shell('お店の登録・編集',`<p class="muted">よく行くお店を登録しておくと、記録するときに選ぶだけで済みます。お店を押すと編集できます。</p>
+${S.places.map(p=>`<div class="card list-item" onclick="go('placeEdit',{id:'${p.id}'})"><div style="flex:1"><b>${esc(p.name)}</b>${p.tel?`<div class="muted">電話：${esc(p.tel)}</div>`:''}${p.hours?`<div class="muted">${esc(p.hours)}</div>`:''}<div class="muted">${esc(tagsOf(p).join(' '))}</div></div><span class="muted">›</span></div>`).join('')}
+<button class="btn" onclick="go('placeEdit',{})">＋ お店を登録する</button>`);
+V.placeEdit=p=>{p=p||{};const pl=S.places.find(x=>x.id===p.id)||{};const back=p.from==='rec'?"go('recEdit')":"go('shops')";
+  const info=p.id==='home'?'':`<label>電話番号（任意）</label><input id="f_ptel" type="tel" value="${esc(pl.tel)}" placeholder="例：03-1234-5678"><label>営業時間・定休日（任意）</label><textarea id="f_phours" style="min-height:60px" placeholder="例：10:00〜18:00　火曜定休">${esc(pl.hours)}</textarea>`;
+  return shell(p.id?'お店の編集':'お店の登録',`<label>店名<span class="req">必須</span></label><input id="f_pname" value="${esc(pl.name)}" placeholder="例：トリミングサロン〇〇">${info}<label>投稿用ハッシュタグ（任意・スペース区切り・5個まで）</label><input id="f_ptags" value="${esc(tagsOf(pl).join(' '))}" placeholder="例：#サロン名 #地域名トリミング"><button class="btn" onclick="savePlace('${p.id||''}','${p.from||''}')">保存する</button>${p.id&&p.id!=='home'?`<button class="btn danger" onclick="delPlace('${p.id}')">このお店を削除</button>`:''}`,back)};
+async function savePlace(id,from){const name=$('#f_pname').value.trim();if(!name)return toast('店名を入れてください');
+  const v=k=>($('#'+k)?.value||'').trim();
+  const data={name,tags:normTags(v('f_ptags')),tel:v('f_ptel'),hours:v('f_phours')};let pid=id;
+  if(id)Object.assign(S.places.find(x=>x.id===id),data);else{pid=uid();S.places.push({id:pid,...data})}
+  await save();toast('保存しました');if(from==='rec'&&D){D.placeId=pid;go('recEdit')}else go('shops')}
+async function delPlace(id){if(!confirm('このお店を削除しますか？'))return;S.places=S.places.filter(p=>p.id!==id);await save();go('shops')}
+
+/* 記録の入力 */
+function newRec(dogId){dogId=dogId||S.dogs[0].id;const last=S.records.slice().sort((a,b)=>b.created-a.created)[0];const ld=recsOf(dogId)[0];
+  D={id:uid(),_new:true,_imgs:[],dogId,placeId:ld?.placeId||last?.placeId||'home',date:today(),before:null,after:null,
+    menus:ld?.menus?[...ld.menus]:['カット','シャンプー'],price:'',staff:ld?.staff||'',cond:'',condNote:'',memo:'',nextAt:'',
+    rem:clone(validRems(S.settings.defRem)),created:Date.now()};go('recEdit')}
+function editRec(id){const r=recOf(id);D={...clone(r),memo:memoOf(r),menus:r.menus||[],rem:validRems(r.rem),_imgs:[]};go('recEdit')}
+function syncD(){if(!$('#f_date'))return;D.dogId=$('#f_dog').value;D.date=$('#f_date').value;D.placeId=$('#f_place').value;
+  const ch=[...document.querySelectorAll('.chip.on')].map(e=>e.dataset.m);
+  const ot=$('#f_mother').value.split(/[、,，\s　]+/).map(s=>s.trim()).filter(Boolean);
+  D.menus=[...new Set([...ch,...ot])];
+  D.price=$('#f_price').value.replace(/[^\d]/g,'');D.staff=$('#f_staff').value.trim();
+  D.cond=$('#f_cond').value;D.condNote=$('#f_condnote').value.trim();
+  D.memo=$('#f_memo').value;D.nextAt=$('#f_next').value;D.rem=readRems()}
+V.recEdit=()=>{if(!D)return V.home();
+  const ph=(k,l)=>`<div><label>${l}</label><div class="photo" onclick="setPhoto('${k}')">${D[k]?`<img data-img="${D[k]}">`:'タップして<br>撮影・選択'}</div></div>`;
+  const other=(D.menus||[]).filter(m=>!MENUS.includes(m)).join('、');
+  return shell(D._new?'記録する':'記録の編集',`
+<label>ワンちゃん</label><select id="f_dog">${S.dogs.map(d=>`<option value="${d.id}" ${d.id===D.dogId?'selected':''}>${esc(d.name)}</option>`).join('')}</select>
+<label>お店・場所<span class="req">必須</span></label><select id="f_place">${S.places.map(p=>`<option value="${p.id}" ${p.id===D.placeId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+<button class="btn sub" onclick="syncD();go('placeEdit',{from:'rec'})">＋ お店を登録</button>
+<label>来店日<span class="req">必須</span></label><input type="date" id="f_date" value="${esc(D.date)}">
+<label>やったこと（タップで選択）</label><div>${MENUS.map(m=>`<span class="chip ${(D.menus||[]).includes(m)?'on':''}" data-m="${esc(m)}" onclick="this.classList.toggle('on')">${esc(m)}</span>`).join('')}</div>
+<input id="f_mother" value="${esc(other)}" placeholder="その他（例：マイクロバブル、ヒゲカット）" style="margin-top:8px">
+<div class="row"><div><label>金額（任意）</label><input id="f_price" type="number" inputmode="numeric" value="${esc(D.price)}" placeholder="例：6500"></div><div><label>担当者（任意）</label><input id="f_staff" value="${esc(D.staff)}" placeholder="例：山田さん"></div></div>
+<div class="row">${ph('before','ビフォー（任意）')}${ph('after','アフター')}</div>
+<p class="muted">アフターだけでもOKです。写真をタップすると撮り直し・選び直しができます。</p>
+<label>体調（任意）</label><select id="f_cond"><option value="">選ばない</option>${CONDS.map(c=>`<option value="${c}" ${c===D.cond?'selected':''}>${c}</option>`).join('')}</select>
+<input id="f_condnote" value="${esc(D.condNote)}" placeholder="気になったこと（例：耳が少し赤い）" style="margin-top:8px">
+<label>オーダー内容・メモ（任意）</label><textarea id="f_memo" placeholder="例：顔まわり短め、耳は丸く、体は5mm">${esc(D.memo)}</textarea>
+<label>次回の予約日時（任意・予約していなければ空欄でOK）</label><input type="datetime-local" id="f_next" value="${esc(D.nextAt)}">
+<label>通知（「◯日前の◯時」をいくつでも追加できます）</label>${remEditor(D.rem)}
+<button class="btn" onclick="saveRec()">保存する</button>`,"cancelRec()")};
+async function setPhoto(k){syncD();const f=await pickFile('image/*');if(!f)return;
+  try{const id=await putImg(await toPhoto(f));D._imgs.push(id);D[k]=id;if(D.crop)for(const s in D.crop)if(D.crop[s])delete D.crop[s][k[0]];render()}
+  catch(e){toast('写真を読み込めませんでした')}}
+async function saveRec(){syncD();
+  if(!D.placeId)return toast('お店・場所を選んでください');
+  if(!D.date)return toast('来店日を入れてください');
+  const old=recOf(D.id);
+  for(const id of D._imgs)if(id!==D.before&&id!==D.after)await delImg(id);
+  if(old)for(const k of['before','after'])if(old[k]&&old[k]!==D[k])await delImg(old[k]);
+  const r={...D};delete r._new;delete r._imgs;
+  if(old)Object.assign(old,r);else S.records.push(r);
+  await save();const id=D.id;D=null;go('rec',id)}
+async function cancelRec(){for(const id of D._imgs)await delImg(id);const n=D._new,id=D.id;D=null;n?go('home'):go('rec',id)}
+
+/* 記録の詳細 */
+V.rec=id=>{const r=recOf(id);if(!r)return V.home();const pl=place(r.placeId);
+  const ph=(k,l)=>`<div><label>${l}</label><div class="photo">${r[k]?`<img data-img="${r[k]}">`:'なし'}</div></div>`;
+  const it=(l,v)=>v?`<div class="muted" style="margin-top:8px">${l}</div><div class="pre">${v}</div>`:'';
+  const photos=r.before?`<div class="row">${ph('before','ビフォー')}${ph('after','アフター')}</div>`:(r.after?`<div class="photo" style="max-width:320px;margin:0 auto"><img data-img="${r.after}"></div>`:'');
+  return shell(`${dog(r.dogId)?.name||''} ${fmtDate(r.date)}`,`${photos}
+<div class="card"><div class="muted">お店・場所</div><b>${esc(pl.name)}</b>
+${it('やったこと',esc((r.menus||[]).join('・')))}
+${it('金額',yen(r.price))}
+${it('担当者',esc(r.staff))}
+${it('体調',esc([r.cond,r.condNote].filter(Boolean).join('　')))}
+${it('オーダー内容・メモ',esc(memoOf(r)))}
+${r.nextAt?`<div class="muted" style="margin-top:8px">次回の予約</div><b>${fmtDT(r.nextAt)}</b><div class="muted">通知：${validRems(r.rem).map(x=>dayLabel(x.d)+'の'+x.t).join('、')||'なし'}</div>`:''}
+${placeBtns(pl)}</div>
+<button class="btn" onclick="go('compare','${r.id}')">画像を作ってインスタに投稿</button>
+${r.nextAt?`<button class="btn sub" onclick="addCal('${r.id}')">予約と通知をカレンダーに追加</button>`:''}
+<button class="btn sub" onclick="go('order','${r.id}')">お店で見せる（大きく表示）</button>
+<button class="btn sub" onclick="editRec('${r.id}')">編集する</button>
+<button class="btn danger" onclick="delRec('${r.id}')">この記録を削除</button>`,`go('history','${r.dogId}')`)};
+async function delRec(id){if(!confirm('この記録を削除しますか？'))return;const r=recOf(id);await delImg(r.before);await delImg(r.after);S.records=S.records.filter(x=>x.id!==id);await save();go('history',r.dogId)}
+
+/* 投稿画像（位置調整・アフターだけも選べる） */
+let CMP=null,rafId=0;
+const allTags=r=>[...new Set([...tagsOf(place(r.placeId)),APP_TAG])];
+const tagsText=()=>allTags(CMP.r).filter(t=>!(CMP.r.tagsOff||[]).includes(t)).join(' ');
+function layout(){const r=CMP.r,sz=r.cmpSize||'post';let ks=['b','a'].filter(k=>CMP.ims[k]);
+  if(r.cmpMode==='after'&&CMP.ims.a)ks=['a'];const one=ks.length===1;
+  const L=sz==='story'?{W:1080,H:1920,foot:1800,c:{b:[30,170,1020,760],a:[30,950,1020,760]}}:{W:1080,H:1350,foot:1290,c:{b:[30,30,500,1170],a:[550,30,500,1170]}};
+  if(one)L.c={[ks[0]]:sz==='story'?[30,170,1020,1540]:[30,30,1020,1170]};
+  L.ks=Object.keys(L.c);L.key=sz+(one?'1':'');return L}
+function cropOf(k){const r=CMP.r,s=layout().key;r.crop=r.crop||{};r.crop[s]=r.crop[s]||{};return r.crop[s][k]=r.crop[s][k]||{z:1,x:0,y:0}}
+function metric(im,cw,ch,p){const s=Math.max(cw/im.naturalWidth,ch/im.naturalHeight)*p.z,w=im.naturalWidth*s,h=im.naturalHeight*s,ox=w-cw,oy=h-ch;return{w,h,ox,oy,dx:-ox/2*(1+p.x),dy:-oy/2*(1+p.y)}}
+const segBtns=(obj,cur,key)=>`<div class="seg" style="margin-top:8px">${Object.entries(obj).map(([k,v])=>`<button class="${k===cur?'on':''}" onclick="setCmp('${key}','${k}')">${v}</button>`).join('')}</div>`;
+V.compare=id=>{const r=recOf(id);if(!r)return V.home();const sz=r.cmpSize||'post',st=r.cmpStyle||0,off=r.tagsOff||[],md=r.cmpMode||'both';
+  const note=!r.before&&!r.after?'<p class="muted">写真がありません。記録の「編集する」から追加してください。</p>':'';
+  return shell('投稿用の画像',`
+${r.before&&r.after?segBtns(MODES,md,'cmpMode'):''}
+${segBtns(SIZES,sz,'cmpSize')}
+<div class="seg" style="margin-top:8px">${STYLES.map((s,i)=>`<button class="${i===st?'on':''}" onclick="setCmp('cmpStyle',${i})">${s.name}</button>`).join('')}</div>
+${note}<canvas id="cmp"></canvas>
+<p class="muted" style="text-align:center">写真を指で動かすと位置を調整できます（2本指で広げると拡大）</p>
+<button class="btn sub" onclick="resetCrop()">位置を元に戻す</button>
+<label>ハッシュタグ（タップでオン・オフ）</label><div>${allTags(r).map(t=>`<span class="tag ${off.includes(t)?'off':''}" data-t="${esc(t)}" onclick="toggleTag(this)">${esc(t)}</span>`).join('')}</div>
+<button class="btn sub" onclick="copyTags()">① ハッシュタグをコピー</button>
+<button class="btn" onclick="shareCmp(true)">② インスタなどに共有</button>
+<button class="btn sub" onclick="shareCmp(false)">画像を保存</button>`,`go('rec','${id}')`)};
+AFTER.compare=async id=>{const r=recOf(id);CMP={r,ims:{},file:null};
+  for(const k of['b','a']){const src=await getImg(k==='b'?r.before:r.after);try{CMP.ims[k]=src?await loadSrc(src):null}catch(e){CMP.ims[k]=null}}
+  drawCmp(true);bindCmp()};
+async function setCmp(key,val){CMP.r[key]=val;await save();render()}
+function drawCmp(final){const cv=$('#cmp');if(!cv||!CMP)return;const r=CMP.r,L=layout(),st=STYLES[r.cmpStyle||0];
+  if(cv.width!==L.W)cv.width=L.W;if(cv.height!==L.H)cv.height=L.H;const x=cv.getContext('2d');
+  x.fillStyle=st.bg;x.fillRect(0,0,L.W,L.H);
+  for(const k of L.ks){const[cx,cy,cw,ch]=L.c[k],im=CMP.ims[k];
+    x.save();x.beginPath();x.rect(cx,cy,cw,ch);x.clip();
+    if(im){const m=metric(im,cw,ch,cropOf(k));x.drawImage(im,cx+m.dx,cy+m.dy,m.w,m.h)}
+    else{x.fillStyle='#ddd';x.fillRect(cx,cy,cw,ch);x.fillStyle='#999';x.font=`bold 40px ${FONT}`;x.textAlign='center';x.fillText('写真なし',cx+cw/2,cy+ch/2)}
+    x.restore();
+    const lb=k==='b'?'BEFORE':'AFTER';x.font=`bold 40px ${FONT}`;x.textAlign='left';const tw=x.measureText(lb).width;
+    x.fillStyle=st.label;x.fillRect(cx,cy,tw+40,64);x.fillStyle=st.labelText;x.textBaseline='middle';x.fillText(lb,cx+20,cy+33);x.textBaseline='alphabetic'}
+  x.fillStyle=st.text;x.textAlign='left';x.font=`bold 38px ${FONT}`;x.fillText(`${dog(r.dogId)?.name||''}  ${fmtDate(r.date)}`,40,L.foot);
+  x.textAlign='right';x.font=`28px ${FONT}`;x.fillText(APP_NAME,L.W-40,L.foot);
+  if(final){CMP.file=null;cv.toBlob(b=>{if(b)CMP.file=new File([b],'trimming.jpg',{type:'image/jpeg'})},'image/jpeg',0.9)}}
+function bindCmp(){const cv=$('#cmp');if(!cv)return;const pts=new Map();let g=null;
+  const clamp=v=>Math.max(-1,Math.min(1,v));
+  const mid=a=>({x:a.reduce((s,p)=>s+p.x,0)/a.length,y:a.reduce((s,p)=>s+p.y,0)/a.length});
+  const dist=a=>Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+  const pos=e=>{const b=cv.getBoundingClientRect(),s=cv.width/b.width;return{x:(e.clientX-b.left)*s,y:(e.clientY-b.top)*s}};
+  const hit=p=>{const L=layout();for(const k of L.ks){const[cx,cy,cw,ch]=L.c[k];if(p.x>=cx&&p.x<=cx+cw&&p.y>=cy&&p.y<=cy+ch)return k}return null};
+  const start=()=>{const a=[...pts.values()],p=cropOf(g.k);g.z0=p.z;g.x0=p.x;g.y0=p.y;g.c=mid(a);g.d=a.length>1?dist(a):0};
+  cv.addEventListener('gesturestart',e=>e.preventDefault());
+  cv.addEventListener('pointerdown',e=>{const p=pos(e);if(!pts.size){const k=hit(p);if(!k||!CMP.ims[k])return;g={k}}else if(!g)return;
+    try{cv.setPointerCapture(e.pointerId)}catch(_){}pts.set(e.pointerId,p);start()});
+  cv.addEventListener('pointermove',e=>{if(!g||!pts.has(e.pointerId))return;e.preventDefault();pts.set(e.pointerId,pos(e));
+    const a=[...pts.values()],p=cropOf(g.k),[, ,cw,ch]=layout().c[g.k];
+    if(a.length>1&&g.d)p.z=Math.min(5,Math.max(1,g.z0*dist(a)/g.d));
+    const c=mid(a),m=metric(CMP.ims[g.k],cw,ch,p);
+    p.x=m.ox>0?clamp(g.x0-(c.x-g.c.x)/(m.ox/2)):0;
+    p.y=m.oy>0?clamp(g.y0-(c.y-g.c.y)/(m.oy/2)):0;
+    if(!rafId)rafId=requestAnimationFrame(()=>{rafId=0;drawCmp(false)})});
+  const end=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(pts.size){start();return}g=null;save();drawCmp(true)};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end)}
+async function resetCrop(){const r=CMP.r;if(r.crop)r.crop[layout().key]={};await save();drawCmp(true);toast('位置を元に戻しました')}
+async function toggleTag(el){const r=CMP.r,t=el.dataset.t;r.tagsOff=r.tagsOff||[];
+  r.tagsOff=r.tagsOff.includes(t)?r.tagsOff.filter(x=>x!==t):[...r.tagsOff,t];el.classList.toggle('off');await save()}
+function copyTags(){const t=tagsText();if(!t)return toast('ハッシュタグがありません');
+  navigator.clipboard.writeText(t).then(()=>toast('コピーしました。インスタのキャプション欄を長押しして「ペースト」してください')).catch(()=>prompt('このハッシュタグをコピーしてください',t))}
+function shareCmp(withTags){if(!CMP||!CMP.file)return toast('画像を準備中です。もう一度押してください');
+  if(withTags){const t=tagsText();if(t&&navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{})}
+  if(navigator.canShare&&navigator.canShare({files:[CMP.file]})){
+    navigator.share({files:[CMP.file]}).catch(e=>{if(e.name!=='AbortError')toast('共有できませんでした。もう一度押してください')});
+    if(!withTags)toast('「画像を保存」を選ぶと写真アプリに保存できます')}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(CMP.file);a.download='trimming.jpg';a.click()}}
+
+/* カレンダー */
+const icsT=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+const icsE=s=>String(s||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/([,;])/g,'\\$1');
+function addCal(id){const r=recOf(id);if(!r||!r.nextAt)return;const st=new Date(r.nextAt),en=new Date(st.getTime()+2*3600000),now=new Date();
+  const pl=place(r.placeId),isShop=pl.id!=='home';
+  const times=validRems(r.rem).map(o=>{const[h,m]=(o.t||'09:00').split(':').map(Number);return new Date(st.getFullYear(),st.getMonth(),st.getDate()-o.d,h,m)}).filter(t=>t>now).sort((a,b)=>a-b);
+  const title=`${dog(r.dogId)?.name||''} トリミング（${pl.name}）`,stamp=icsT(now);
+  const desc=[isShop&&pl.tel?'電話：'+pl.tel:'',isShop&&pl.hours?'営業時間：'+pl.hours:'',memoOf(r)?'オーダー：'+memoOf(r):''].filter(Boolean).join('\n');
+  const loc=isShop?pl.name:'';
+  const alarm=at=>['BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsE(title),'TRIGGER;VALUE=DATE-TIME:'+icsT(at),'END:VALARM'];
+  const ev=(u,s,e,sum,al,desc,loc)=>['BEGIN:VEVENT','UID:'+u,'DTSTAMP:'+stamp,'DTSTART:'+icsT(s),'DTEND:'+icsT(e),'SUMMARY:'+icsE(sum),...(loc?['LOCATION:'+icsE(loc)]:[]),...(desc?['DESCRIPTION:'+icsE(desc)]:[]),...al,'END:VEVENT'];
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//trimlog//JA','CALSCALE:GREGORIAN'];
+  L.push(...ev(r.id+'@trimlog',st,en,title,times.slice(0,2).flatMap(alarm),desc,loc));
+  times.slice(2).forEach((t,i)=>L.push(...ev(r.id+'-n'+i+'@trimlog',t,new Date(t.getTime()+900000),'【通知】'+title,alarm(t),desc,'')));
+  L.push('END:VCALENDAR');
+  const a=document.createElement('a');a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(L.join('\r\n'));a.click();
+  toast(times.length>2?'表示された画面で「すべてを追加」を押してください':'カレンダーの画面で「追加」を押してください')}
+
+/* お店で見せる画面 */
+V.order=id=>{const r=recOf(id);if(!r)return V.home();const d=dog(r.dogId);
+  return `<div class="order"><button class="btn sub" onclick="go('rec','${id}')">閉じる</button><p class="muted">トリマーさんにこの画面を見せて「前回と同じで」と伝えるための画面です。</p><h2>${esc(d?.name)}　${fmtDate(r.date)}</h2>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}${r.staff?'　担当：'+esc(r.staff):''}</div>`:''}${cover(r)?`<div class="photo" style="margin-top:10px"><img data-img="${cover(r)}"></div>`:''}<div class="memo">${esc(memoOf(r))||'メモなし'}</div></div>`};
+AFTER.order=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}};
+
+/* 履歴 */
+V.history=id=>{const dogId=id||S.dogs[0]?.id;const d=dog(dogId);if(!d)return V.home();const rs=recsOf(dogId);
+  const sel=S.dogs.length>1?`<select onchange="go('history',this.value)" style="margin-bottom:12px">${S.dogs.map(x=>`<option value="${x.id}" ${x.id===dogId?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`:'';
+  return shell(d.name+'の記録',`${sel}<button class="btn" onclick="newRec('${dogId}')">記録する</button>${rs.map(r=>`<div class="card list-item" onclick="go('rec','${r.id}')"><div class="photo">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b>${fmtDate(r.date)}</b><div class="muted">${esc(place(r.placeId).name)}${(r.menus||[]).length?'・'+esc(r.menus.join('・')):''}</div>${r.price?`<div class="muted">${yen(r.price)}</div>`:''}</div><span class="muted">›</span></div>`).join('')||'<p class="muted">まだ記録がありません</p>'}<button class="btn sub" onclick="go('dogEdit','${dogId}')">ワンちゃんの情報を編集</button>`)};
+
+/* 設定 */
+function openSettings(){RD=null;go('settings')}
+V.settings=()=>{if(!RD)RD=clone(validRems(S.settings.defRem));
+  return shell('設定',`<div class="card"><b>通知の初期設定</b><p class="muted">新しく記録するとき、最初から入る通知です。</p>${remEditor(RD)}<button class="btn" onclick="saveDefRem()">通知の初期設定を保存</button></div>
+<div class="card"><b>バックアップ</b><p class="muted">データはこのiPhoneの中だけに保存されています。ホーム画面のアイコンを消すとデータも消えるので、ときどきバックアップしてください。</p><button class="btn sub" onclick="backup()">バックアップを作る</button><button class="btn sub" onclick="restore()">バックアップから戻す</button></div>`)};
+async function saveDefRem(){S.settings.defRem=readRems();RD=null;await save();toast('保存しました');openSettings()}
+let BKF=null;
+async function backup(){
+  if(!BKF){const imgs={};for(const r of S.records)for(const id of[r.before,r.after]){if(id&&!imgs[id]){const v=await getImg(id);if(v)imgs[id]=v}}
+    BKF=new File([JSON.stringify({v:1,S,imgs})],`trimlog-backup-${today()}.json`,{type:'application/json'})}
+  if(navigator.canShare&&navigator.canShare({files:[BKF]})){
+    try{await navigator.share({files:[BKF]});BKF=null}
+    catch(e){if(e.name==='NotAllowedError')toast('準備ができました。もう一度「バックアップを作る」を押してください');else BKF=null}}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(BKF);a.download=BKF.name;a.click();BKF=null}}
+async function restore(){const f=await pickFile('');if(!f)return;
+  try{const j=JSON.parse(await f.text());if(!j.S||!Array.isArray(j.S.dogs))throw 0;
+    if(!confirm('今のデータを、バックアップの内容に置き換えます。よろしいですか？'))return;
+    for(const[k,v]of Object.entries(j.imgs||{}))await dbSet(k,v);S=j.S;fixS();imgCache.clear();await save();toast('復元しました');go('home')}
+  catch(e){toast('バックアップファイルを読み込めませんでした')}}
+
+/* 起動 */
+function fixS(){S.dogs=S.dogs||[];S.places=S.places||[];S.records=S.records||[];S.settings=S.settings||{};
+  S.settings.defRem=Array.isArray(S.settings.defRem)?validRems(S.settings.defRem):clone(DEF_REM);
+  if(!S.places.some(p=>p.id==='home'))S.places.unshift({id:'home',name:'自宅',tags:['#おうちトリミング','#セルフトリミング']})}
+(async()=>{try{await openDB();const s=await dbGet('state');if(s)S=s;fixS();await save();
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}
+  catch(e){toast('データを読み込めませんでした')}render()})();
+</script>
+</body>
+</html>
