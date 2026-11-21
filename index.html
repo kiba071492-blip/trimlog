@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="トリミングログ">
+<meta name="theme-color" content="#ffffff">
+<title>トリミングログ</title>
+<style>
+:root{--main:#e8758f;--bg:#fff7f8;--text:#333;--sub:#888;--line:#f3e3e6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,"Hiragino Sans",sans-serif;background:var(--bg);color:var(--text)}
+header{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:#fff;border-bottom:1px solid #f0d5db;position:sticky;top:0;z-index:5;min-height:52px}
+header h1{font-size:18px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{padding:16px 16px 40px;max-width:600px;margin:0 auto}
+main.pb{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--main);color:#fff;font-size:16px;font-weight:bold;margin:8px 0}
+a.btn{text-align:center;text-decoration:none}
+.btn.sub{background:#fff;color:var(--main);border:2px solid var(--main)}
+.btn.danger{background:#fff;color:#d33;border:2px solid #d33}
+.btn.big{padding:18px;font-size:18px;margin:12px 0}
+.btn.small{padding:11px;font-size:14px;margin:0}
+.link{display:block;width:100%;background:none;border:none;color:var(--main);font-size:15px;font-weight:bold;padding:12px 0 2px;text-align:center}
+.link.danger{color:#d33;margin-top:16px}
+.back{background:none;border:none;font-size:16px;color:var(--main);padding:0;flex:none}
+.card{background:#fff;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card>label:first-child{margin-top:0}
+.card.alert{border:2px solid var(--main)}
+.sec{font-size:16px;font-weight:bold;margin:26px 0 8px;padding-left:10px;border-left:5px solid var(--main)}
+main>.sec:first-child{margin-top:4px}
+label{display:block;font-size:13px;color:var(--sub);margin:14px 0 4px}
+label.chk{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--text)}
+label.chk input{width:22px;height:22px;flex:none;margin:0}
+.req{color:#d33;font-weight:bold;font-size:12px;margin-left:4px}
+input,select,textarea{width:100%;padding:12px;font-size:16px;border:1px solid #ddd;border-radius:10px;background:#fff;font-family:inherit;color:var(--text)}
+textarea{min-height:90px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.photo{aspect-ratio:3/4;background:#f3e3e6;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--sub);overflow:hidden;font-size:13px;text-align:center}
+.photo img{width:100%;height:100%;object-fit:cover}
+.photo.big{background:#f7f7f7}
+.photo.big img{object-fit:contain}
+.count{font-size:36px;font-weight:bold;color:var(--main);line-height:1.2}
+.muted{color:var(--sub);font-size:13px}
+.pre{white-space:pre-wrap}
+.tag{display:inline-block;padding:6px 12px;margin:4px;border-radius:20px;border:1px solid var(--main);color:var(--main);font-size:14px}
+.tag.off{border-color:#ccc;color:#bbb;text-decoration:line-through}
+.chip{display:inline-block;padding:8px 12px;margin:4px 4px 0 0;border-radius:20px;border:1px solid #ddd;color:#888;font-size:14px;background:#fff}
+.chip.on{background:var(--main);border-color:var(--main);color:#fff}
+.list-item{display:flex;align-items:center;gap:12px}
+.list-item .photo{width:56px;flex:none;border-radius:8px}
+.minicall{flex:none;padding:8px 12px;border:2px solid var(--main);border-radius:10px;color:var(--main);background:#fff;font-weight:bold;text-decoration:none;font-size:13px}
+.mrow{display:flex;align-items:center;gap:10px;padding:16px 0;border-top:1px solid var(--line)}
+.mrow:first-child{border-top:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gitem{background:#fff;border-radius:14px;padding:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:14px}
+.gitem .photo{margin-bottom:6px;border-radius:10px}
+.stars{display:flex;gap:6px}
+.stars button{flex:none;width:44px;height:44px;border:none;background:none;font-size:34px;color:#ddd;padding:0;line-height:1}
+.stars button.on{color:#f5b301}
+.star{color:#f5b301;letter-spacing:1px}
+.star0{color:#ddd;letter-spacing:1px}
+.rank{flex:none;width:30px;font-size:22px;font-weight:bold;color:var(--main);text-align:center}
+.order{position:fixed;inset:0;background:#fff;z-index:20;overflow:auto;padding:calc(20px + env(safe-area-inset-top)) 20px 40px}
+.order h2{margin:14px 0 2px;font-size:24px}
+.order .memo{font-size:26px;line-height:1.6;white-space:pre-wrap;font-weight:bold;margin-top:16px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid #f0d5db;padding-bottom:env(safe-area-inset-bottom);z-index:6}
+.tabbar button{flex:1;border:none;background:none;padding:16px 0 14px;font-size:14px;font-weight:bold;color:#aaa;border-top:3px solid transparent}
+.tabbar button.on{color:var(--main);border-top-color:var(--main)}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #f0d5db;padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:6}
+.savebar .btn{margin:0 auto;max-width:568px}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:12px 18px;border-radius:24px;font-size:14px;z-index:50;max-width:90%;text-align:center}
+#cmp{display:block;margin:12px auto 4px;width:auto;height:auto;max-width:100%;max-height:58vh;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.15);touch-action:none;-webkit-user-select:none;user-select:none}
+.remrow{display:flex;gap:8px;align-items:center;margin:6px 0}
+.remrow select{flex:1.2}.remrow input{flex:1}
+.remrow button{flex:none;width:44px;height:44px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#d33;font-size:18px}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:10px;border-radius:10px;border:2px solid var(--main);background:#fff;color:var(--main);font-size:14px;font-weight:bold}
+.seg button.on{background:var(--main);color:#fff}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const APP_NAME='トリミングログ';
+const APP_TAG='#トリミングログ';
+const DAYS=[0,1,2,3,5,7,10,14,21,30];
+const DEF_REM=[{d:1,t:'20:00'},{d:0,t:'09:00'}];
+const IVS=[0,14,21,28,30,40,45,60,90];
+const DEF_IV=30,DEF_RT='10:00';
+const MENUS=['カット','シャンプー','部分カット','爪切り','耳そうじ','肛門腺しぼり','歯みがき','パック・スパ'];
+const CONDS=['元気','いつも通り','少し元気がない','体調が悪い'];
+const STYLES=[{name:'ピンク',bg:'#fff7f8',text:'#e8758f',label:'#e8758f',labelText:'#fff'},{name:'ダーク',bg:'#2b2b2b',text:'#fff',label:'#f7c948',labelText:'#2b2b2b'}];
+const SIZES={post:'投稿用（縦4:5）',story:'ストーリー・リール用'};
+const MODES={both:'ビフォー＋アフター',after:'アフターだけ'};
+const FONT='-apple-system,"Hiragino Sans",sans-serif';
+const WD='日月火水木金土';
+const TABS=[['home','ホーム'],['history','記録'],['ranking','ランキング'],['settings','設定']];
+const TAB_IDS=TABS.map(t=>t[0]);
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const p2=n=>String(n).padStart(2,'0');
+const clone=o=>JSON.parse(JSON.stringify(o));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
+const nowTime=()=>{const d=new Date();return p2(d.getHours())+':'+p2(d.getMinutes())};
+const fmtDate=s=>s?s.replace(/-/g,'/'):'';
+const visitStr=r=>fmtDate(r.date)+(r.time?' '+r.time:'');
+const fmtDT=s=>{if(!s)return'';const d=new Date(s);return `${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]}) ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+const fmtMD=d=>`${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]})`;
+const daysTo=s=>{const n=new Date(s),t=new Date();return Math.round((new Date(n.getFullYear(),n.getMonth(),n.getDate())-new Date(t.getFullYear(),t.getMonth(),t.getDate()))/86400000)};
+const yen=p=>p?'¥'+Number(p).toLocaleString():'';
+const dayLabel=d=>d===0?'当日':d+'日前';
+const validRems=list=>(Array.isArray(list)?list:[]).filter(o=>o&&typeof o==='object'&&typeof o.d==='number');
+const remText=list=>validRems(list).map(x=>dayLabel(x.d)+'の'+x.t).join('、')||'なし';
+const memoOf=r=>r.memo??r.order??r.note??'';
+const starHtml=n=>n?`<span class="star">${'★'.repeat(n)}</span><span class="star0">${'★'.repeat(5-n)}</span>`:'';
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3500)}
+
+/* ---- 保存（IndexedDB） ---- */
+let db;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('trimlog',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
+function dbGet(k){return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function dbSet(k,v){return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+function dbDel(k){return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+function dbClear(){return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+
+let S={dogs:[],places:[],records:[],favs:[],resv:[],settings:{defRem:clone(DEF_REM)}};
+const imgCache=new Map();
+const save=()=>dbSet('state',S);
+async function putImg(data){const id='img_'+uid();await dbSet(id,data);imgCache.set(id,data);return id}
+async function getImg(id){if(!id)return null;if(imgCache.has(id))return imgCache.get(id);const v=await dbGet(id);if(v)imgCache.set(id,v);return v}
+async function delImg(id){if(id){await dbDel(id);imgCache.delete(id)}}
+async function hydrate(){for(const el of document.querySelectorAll('img[data-img]')){const v=await getImg(el.dataset.img);if(v)el.src=v}}
+
+const dog=id=>S.dogs.find(d=>d.id===id);
+const activeDogs=()=>S.dogs.filter(d=>!d.hidden);
+const dogLabel=d=>esc(d.name)+(d.hidden?'（非表示）':'');
+const place=id=>S.places.find(p=>p.id===id)||S.places[0];
+const recOf=id=>S.records.find(r=>r.id===id);
+const favOf=id=>S.favs.find(f=>f.id===id);
+const resOf=id=>S.resv.find(x=>x.id===id);
+const linkedRes=recId=>S.resv.find(x=>x.fromRec===recId);
+const byNew=(a,b)=>b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||'')||b.created-a.created;
+const recsOf=dogId=>S.records.filter(r=>r.dogId===dogId).sort(byNew);
+const cover=r=>r.after||r.before;
+const normTags=s=>[...new Set(String(s).split(/[\s,、　]+/).filter(Boolean).map(t=>'#'+t.replace(/^[#＃]+/,'')).filter(t=>t.length>1))].slice(0,5);
+const tagsOf=p=>!p?[]:Array.isArray(p.tags)?p.tags:normTags(p.tags||'');
+const shopTag=p=>!p||p.id==='home'?null:'#'+String(p.name||'').replace(/[\s　#＃]+/g,'');
+const placeOpts=cur=>S.places.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${esc(p.name)}</option>`).join('');
+
+/* ---- お店の情報 ---- */
+const telHref=t=>'tel:'+String(t||'').replace(/[^\d+]/g,'');
+function placeBtns(p){if(!p||p.id==='home')return'';
+  return `${p.hours?`<div class="muted pre" style="margin-top:8px">営業時間・定休日：${esc(p.hours)}</div>`:''}${p.tel?`<a class="btn sub" href="${telHref(p.tel)}">電話する（${esc(p.tel)}）</a>`:''}`}
+
+/* ---- ランキング ---- */
+function rankCuts(dg){return S.records.filter(r=>r.score>0&&(!dg||r.dogId===dg)).sort((a,b)=>b.score-a.score||byNew(a,b))}
+function rankShops(dg){const m={};for(const r of S.records){if(!(r.score>0)||(dg&&r.dogId!==dg))continue;(m[r.placeId]=m[r.placeId]||[]).push(r.score)}
+  return Object.entries(m).filter(([id])=>S.places.some(p=>p.id===id)).map(([id,a])=>({p:place(id),avg:a.reduce((s,v)=>s+v,0)/a.length,n:a.length})).sort((a,b)=>b.avg-a.avg||b.n-a.n)}
+function withRank(list,val){let prev=null,rk=0;return list.map((x,i)=>{const v=val(x);if(v!==prev){rk=i+1;prev=v}return{x,rk}})}
+const cutCard=(r,rk)=>`<div class="card list-item" onclick="go('rec','${r.id}')"><div class="rank">${rk}</div><div class="photo">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1">${starHtml(r.score)}<div><b>${esc(dog(r.dogId)?.name||'')}</b>　${fmtDate(r.date)}</div><div class="muted">${esc(place(r.placeId).name)}</div></div><span class="muted">›</span></div>`;
+const shopCard=(o,rk)=>`<div class="card list-item"><div class="rank">${rk}</div><div style="flex:1"><b>${esc(o.p.name)}</b><div><span class="star">★</span> ${o.avg.toFixed(1)}　<span class="muted">${o.n}回</span></div></div>${o.p.tel&&o.p.id!=='home'?`<a class="minicall" href="${telHref(o.p.tel)}">電話</a>`:''}</div>`;
+const dogFilter=(cur,on)=>S.dogs.length>1?`<select onchange="${on}" style="margin-top:10px"><option value="">すべてのワンちゃん</option>${S.dogs.map(d=>`<option value="${d.id}" ${d.id===cur?'selected':''}>${dogLabel(d)}</option>`).join('')}</select>`:'';
+
+/* ---- 写真（アプリの中にコピーして保存） ---- */
+function pickFile(accept){return new Promise(res=>{const i=document.createElement('input');i.type='file';if(accept)i.accept=accept;i.style.display='none';document.body.appendChild(i);i.onchange=()=>{res(i.files[0]||null);i.remove()};i.click()})}
+function loadSrc(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
+async function toPhoto(file){
+  const url=URL.createObjectURL(file);
+  try{const im=await loadSrc(url);const r=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight));
+    const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*r);c.height=Math.round(im.naturalHeight*r);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',0.85)}
+  finally{URL.revokeObjectURL(url)}
+}
+
+/* ---- 画面の切り替え ---- */
+const V={},AFTER={};
+let view='home',param=null,stack=[],wl=null,JUST=null;
+function relWL(){if(wl){wl.release().catch(()=>{});wl=null}}
+function go(v,p,o){if(view==='order'&&v!=='order')relWL();
+  if(TAB_IDS.includes(v)){stack=[];JUST=null}else if(!(o&&o.replace))stack.push([view,param,window.scrollY]);
+  view=v;param=p;render();window.scrollTo(0,0)}
+function back(){if(view==='order')relWL();const b=stack.pop()||['home',null,0];view=b[0];param=b[1];render();window.scrollTo(0,b[2]||0)}
+function render(){$('#app').innerHTML=V[view](param);hydrate();if(AFTER[view])AFTER[view](param)}
+function shell(title,body,o){o=o||{};const tab=TAB_IDS.includes(view);const b=o.back===1||o.back===true?'back()':o.back;
+  return `<header>${b?`<button class="back" onclick="${b}">‹ 戻る</button>`:''}<h1>${esc(title)}</h1></header><main class="${tab||o.bar?'pb':''}">${body}</main>${o.bar?`<div class="savebar">${o.bar}</div>`:''}${tab?`<nav class="tabbar">${TABS.map(([v,l])=>`<button class="${v===view?'on':''}" onclick="go('${v}')">${l}</button>`).join('')}</nav>`:''}`}
+const installHint=()=>navigator.standalone?'':`<div class="card muted">Safariの共有ボタンから「ホーム画面に追加」すると、アプリのように使えて、データも消えにくくなります。</div>`;
+function dogField(id,cur){let list=activeDogs();const c=dog(cur);if(c&&c.hidden)list=[...list,c];if(!list.length)list=S.dogs.slice(0,1);
+  return list.length===1?`<input type="hidden" id="${id}" value="${list[0].id}">`:`<label>ワンちゃん</label><select id="${id}">${list.map(d=>`<option value="${d.id}" ${d.id===cur?'selected':''}>${dogLabel(d)}</option>`).join('')}</select>`}
+const firstDog=()=>(activeDogs()[0]||S.dogs[0]).id;
+
+/* ---- 通知の編集 ---- */
+const remEditor=list=>`<div>${list.map((r,i)=>`<div class="remrow"><select class="rem_d">${DAYS.map(d=>`<option value="${d}" ${d===r.d?'selected':''}>${dayLabel(d)}</option>`).join('')}</select><input type="time" class="rem_t" value="${esc(r.t)}"><button onclick="delRem(${i})">✕</button></div>`).join('')||'<p class="muted">通知なし</p>'}</div><button class="link" onclick="addRem()">＋ 通知を追加</button>`;
+function readRems(){return [...document.querySelectorAll('.remrow')].map(el=>({d:Number(el.querySelector('.rem_d').value),t:el.querySelector('.rem_t').value||'09:00'}))}
+let RD=null,D=null,R=null;
+function remList(){if(view==='recEdit'){syncD();return D.rem}if(view==='resEdit'){syncR();return R.rem}RD=readRems();return RD}
+function addRem(){remList().push({d:0,t:'09:00'});render()}
+function delRem(i){remList().splice(i,1);render()}
+
+/* ---- 予約一覧・そろそろ予約 ---- */
+function upcoming(){const now=new Date();
+  return S.resv.filter(x=>x.at&&new Date(x.at)>now&&!dog(x.dogId)?.hidden).sort((x,y)=>x.at.localeCompare(y.at))}
+function dueDate(d,r){const t=new Date(r.date+'T00:00');t.setDate(t.getDate()+Number(d.interval));const[h,m]=String(d.rTime||DEF_RT).split(':').map(Number);t.setHours(h||0,m||0,0,0);return t}
+function dueOf(d,ups){if(d.hidden||!(Number(d.interval)>0))return null;if(ups.some(u=>u.dogId===d.id))return null;
+  const r=recsOf(d.id)[0];if(!r)return null;const due=dueDate(d,r);return daysTo(due)<=0?{r,due}:null}
+const resRow=(x,first)=>{const p=place(x.placeId);
+  return `<div class="list-item" style="padding:12px 0;${first?'':'border-top:1px solid var(--line)'}" onclick="editRes('${x.id}')"><div style="flex:1"><b>${fmtDT(x.at)}</b><div class="muted">${esc(dog(x.dogId)?.name)}・${esc(p.name)}</div>${x.menu?`<div class="muted">${esc(x.menu)}</div>`:''}</div>${p.tel&&p.id!=='home'?`<a class="minicall" href="${telHref(p.tel)}" onclick="event.stopPropagation()">電話</a>`:''}<span class="muted">›</span></div>`};
+
+/* ===== ホーム ===== */
+V.home=()=>{
+  if(!S.dogs.length)return shell(APP_NAME,`<div class="card"><p>まずはワンちゃんを登録しましょう。</p><button class="btn" onclick="go('dogEdit')">ワンちゃんを登録する</button></div>${installHint()}`);
+  const ups=upcoming(),ad=activeDogs();
+  const dues=ad.map(d=>({d,x:dueOf(d,ups)})).filter(o=>o.x);
+  const dueHtml=dues.length?`<div class="sec">そろそろ予約</div>${dues.map(o=>{const p=place(o.x.r.placeId);const since=-daysTo(o.x.r.date+'T00:00');
+    return `<div class="card alert"><b>${esc(o.d.name)}</b><div class="muted">前回のトリミングから${since}日たちました</div><div class="row" style="margin-top:10px">${p.tel&&p.id!=='home'?`<a class="btn sub small" href="${telHref(p.tel)}">${esc(p.name)}に電話</a>`:''}<button class="btn small" onclick="newRes('${o.d.id}')">予約を追加</button></div></div>`}).join('')}`:'';
+  let nx='<p class="muted" style="margin:4px 0 0">予約はまだありません</p>';
+  if(ups.length){const days=daysTo(ups[0].at);nx=`<div class="count">${days===0?'今日':'あと'+days+'日'}</div>${ups.map((x,i)=>resRow(x,i===0)).join('')}`}
+  nx+=`<button class="link" onclick="newRes()">＋ 予約を追加</button>`;
+  const dogs=ad.map(d=>{const r=recsOf(d.id)[0];
+    return `<div class="card list-item" onclick="go('history',{dog:'${d.id}',tab:'rec'})"><div class="photo">${r&&cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b>${esc(d.name)}</b>${d.breed?`<div class="muted">${esc(d.breed)}</div>`:''}</div><span class="muted">›</span></div>`}).join('')||'<p class="muted">表示中のワンちゃんがいません。「設定」から表示を戻せます。</p>';
+  return shell(APP_NAME,`${dueHtml}<div class="sec">次回の予約</div><div class="card">${nx}</div>
+<button class="btn big" onclick="newRec()">今回のトリミングを記録する</button>
+<button class="btn sub big" onclick="go('orderPick')">お店で見せる</button>
+<div class="sec">ワンちゃん</div>${dogs}${installHint()}`)};
+
+/* ===== 記録タブ ===== */
+let HF={dog:'',tab:'rec'};
+const recCard=r=>`<div class="card list-item" onclick="go('rec','${r.id}')"><div class="photo">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b>${esc(visitStr(r))}</b>${r.score?`<div>${starHtml(r.score)}</div>`:''}<div class="muted">${S.dogs.length>1?esc(dog(r.dogId)?.name||'')+'・':''}${esc(place(r.placeId).name)}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><span class="muted">›</span></div>`;
+const favCard=f=>`<div class="card list-item" onclick="go('fav','${f.id}')"><div class="photo">${f.img?`<img data-img="${f.img}">`:''}</div><div style="flex:1"><b>${esc(f.name)}</b><div class="muted">${esc(dog(f.dogId)?.name||'')}${f.memo?'・'+esc(f.memo.slice(0,30)):''}</div></div><span class="muted">›</span></div>`;
+V.history=p=>{if(p)HF={dog:p.dog&&dog(p.dog)?p.dog:'',tab:p.tab||'rec'};if(HF.dog&&!dog(HF.dog))HF.dog='';const dg=HF.dog,tab=HF.tab;
+  if(!S.dogs.length)return V.home();
+  let body;
+  if(tab==='rec'){const l=S.records.filter(r=>!dg||r.dogId===dg).sort(byNew);body=l.map(recCard).join('')||'<p class="muted">まだ記録がありません。</p>'}
+  else{const l=S.favs.filter(f=>!dg||f.dogId===dg);body=l.map(favCard).join('')||'<p class="muted">記録の画面の「お気に入りに登録」から追加できます。</p>'}
+  return shell('記録',`<button class="btn" onclick="newRec('${dg}')">今回のトリミングを記録する</button>
+<div class="seg" style="margin-top:14px"><button class="${tab==='rec'?'on':''}" onclick="go('history',{dog:'${dg}',tab:'rec'})">これまでの記録</button><button class="${tab==='fav'?'on':''}" onclick="go('history',{dog:'${dg}',tab:'fav'})">お気に入り</button></div>${dogFilter(dg,`go('history',{dog:this.value,tab:'${tab}'})`)}${body}`)};
+
+/* ===== ランキングタブ ===== */
+V.ranking=p=>{p=p||{};const tab=p.tab||'cut',dg=p.dog||'';
+  let body;
+  if(tab==='cut'){const l=withRank(rankCuts(dg),r=>r.score);body=`<p class="muted">点数の高い順です。同じ点数なら新しい記録が上になります。</p>${l.map(o=>cutCard(o.x,o.rk)).join('')||'<p class="muted">記録に★で点数をつけると、ここに並びます。</p>'}`}
+  else{const l=withRank(rankShops(dg),o=>o.avg.toFixed(1));body=`<p class="muted">お店ごとの点数の平均が高い順です。</p>${l.map(o=>shopCard(o.x,o.rk)).join('')||'<p class="muted">記録に★で点数をつけると、ここに並びます。</p>'}`}
+  return shell('ランキング',`<div class="seg"><button class="${tab==='cut'?'on':''}" onclick="go('ranking',{tab:'cut',dog:'${dg}'})">カット</button><button class="${tab==='shop'?'on':''}" onclick="go('ranking',{tab:'shop',dog:'${dg}'})">お店</button></div>${dogFilter(dg,`go('ranking',{tab:'${tab}',dog:this.value})`)}${body}`)};
+
+/* ===== 設定タブ ===== */
+const menuRow=(l,sub,on)=>`<div class="mrow" onclick="${on}"><div style="flex:1"><b>${l}</b>${sub?`<div class="muted">${sub}</div>`:''}</div><span class="muted">›</span></div>`;
+V.settings=()=>shell('設定',`<div class="card" style="padding:0 14px">
+${menuRow('ワンちゃんの登録・編集',S.dogs.map(dogLabel).join('、')||'まだいません',"go('dogs')")}
+${menuRow('お店の登録・編集',esc(S.places.map(p=>p.name).join('、')),"go('shops')")}
+${menuRow('予約の通知の初期設定',remText(S.settings.defRem),"openRemDef()")}
+${menuRow('バックアップ','データをファイルに保存・復元',"BK=null;go('backup')")}
+</div>${installHint()}`);
+
+/* ワンちゃん */
+const ivLabel=n=>n>0?n+'日後':'お知らせしない';
+V.dogs=()=>shell('ワンちゃん',`${S.dogs.map(d=>`<div class="card list-item" onclick="go('dogEdit','${d.id}')" style="${d.hidden?'opacity:.55':''}"><div style="flex:1"><b>${dogLabel(d)}</b>${d.breed?`<div class="muted">${esc(d.breed)}</div>`:''}<div class="muted">予約していないときのお知らせ：${ivLabel(Number(d.interval))}</div></div><span class="muted">›</span></div>`).join('')}<button class="btn" onclick="go('dogEdit')">＋ ワンちゃんを追加</button>`,{back:1});
+V.dogEdit=id=>{const d=dog(id)||{interval:DEF_IV,rTime:DEF_RT};const iv=Number(d.interval);
+  return shell(id?'ワンちゃんの編集':'ワンちゃんの登録',`<div class="card"><label>名前<span class="req">必須</span></label><input id="f_name" value="${esc(d.name)}" placeholder="例：モカ"><label>犬種（任意）</label><input id="f_breed" value="${esc(d.breed)}" placeholder="例：トイプードル"></div>
+<div class="sec">予約していないときのお知らせ</div><div class="card"><p class="muted" style="margin-top:0">次の予約が入っていないまま日数がたつと、ホームに「そろそろ予約」と出ます。</p>
+<div class="row"><div><label>前回の来店から</label><select id="f_iv">${IVS.map(n=>`<option value="${n}" ${n===iv?'selected':''}>${ivLabel(n)}</option>`).join('')}</select></div><div><label>時刻（カレンダー用）</label><input type="time" id="f_rt" value="${esc(d.rTime||DEF_RT)}"></div></div></div>
+${id?`<div class="sec">表示</div><div class="card"><label class="chk"><input type="checkbox" id="f_hide" ${d.hidden?'checked':''}>ホームや選択肢に表示しない</label><p class="muted" style="margin-bottom:0">記録と写真は消えません。「記録」タブで見返せます。あとから戻すこともできます。</p></div>
+<button class="link danger" onclick="delDog('${id}')">このワンちゃんと記録をすべて削除</button>`:''}`,{back:1,bar:`<button class="btn" onclick="saveDog('${id||''}')">保存する</button>`})};
+async function saveDog(id){const name=$('#f_name').value.trim();if(!name)return toast('名前を入れてください');
+  const data={name,breed:$('#f_breed').value.trim(),interval:Number($('#f_iv').value)||0,rTime:$('#f_rt').value||DEF_RT,hidden:!!($('#f_hide')&&$('#f_hide').checked)};
+  if(id)Object.assign(dog(id),data);else S.dogs.push({id:uid(),...data});await save();toast('保存しました');back()}
+async function delDog(id){if(!confirm('このワンちゃんと、すべての記録・写真を削除します。元に戻せません。\n\n表示だけ消したいときは「表示しない」にチェックしてください。\n\n削除しますか？'))return;for(const r of S.records.filter(r=>r.dogId===id)){await delImg(r.before);await delImg(r.after)}S.records=S.records.filter(r=>r.dogId!==id);S.resv=S.resv.filter(x=>x.dogId!==id);S.dogs=S.dogs.filter(d=>d.id!==id);await save();back()}
+
+/* お店 */
+V.shops=()=>shell('お店',`<p class="muted">よく行くお店を登録しておくと、記録するときに選ぶだけで済みます。</p>
+${S.places.map(p=>`<div class="card list-item" onclick="go('placeEdit',{id:'${p.id}'})"><div style="flex:1"><b>${esc(p.name)}</b>${p.tel?`<div class="muted">電話：${esc(p.tel)}</div>`:''}${p.hours?`<div class="muted">${esc(p.hours)}</div>`:''}<div class="muted">${esc([shopTag(p),...tagsOf(p)].filter(Boolean).join(' '))}</div></div><span class="muted">›</span></div>`).join('')}
+<button class="btn" onclick="go('placeEdit',{})">＋ お店を登録する</button>`,{back:1});
+V.placeEdit=p=>{p=p||{};const pl=S.places.find(x=>x.id===p.id)||{};
+  const info=p.id==='home'?'':`<label>電話番号（任意）</label><input id="f_ptel" type="tel" value="${esc(pl.tel)}" placeholder="例：03-1234-5678"><label>営業時間・定休日（任意）</label><textarea id="f_phours" style="min-height:60px" placeholder="例：10:00〜18:00　火曜定休">${esc(pl.hours)}</textarea>`;
+  return shell(p.id?'お店の編集':'お店の登録',`<div class="card"><label>店名<span class="req">必須</span></label><input id="f_pname" value="${esc(pl.name)}" placeholder="例：トリミングサロン〇〇">${info}<label>追加のハッシュタグ（任意・スペース区切り・5個まで）</label><input id="f_ptags" value="${esc(tagsOf(pl).join(' '))}" placeholder="例：#地域名トリミング">${p.id==='home'?'':'<p class="muted">店名は自動でハッシュタグに入ります。</p>'}</div>${p.id&&p.id!=='home'?`<button class="link danger" onclick="delPlace('${p.id}')">このお店を削除</button>`:''}`,{back:1,bar:`<button class="btn" onclick="savePlace('${p.id||''}','${p.from||''}')">保存する</button>`})};
+async function savePlace(id,from){const name=$('#f_pname').value.trim();if(!name)return toast('店名を入れてください');
+  const v=k=>($('#'+k)?.value||'').trim();
+  const data={name,tags:normTags(v('f_ptags')),tel:v('f_ptel'),hours:v('f_phours')};let pid=id;
+  if(id)Object.assign(S.places.find(x=>x.id===id),data);else{pid=uid();S.places.push({id:pid,...data})}
+  await save();toast('保存しました');
+  if(from==='rec'&&D)D.placeId=pid;if(from==='nrec'&&D)D.nplace=pid;if(from==='res'&&R)R.placeId=pid;back()}
+async function delPlace(id){if(!confirm('このお店を削除しますか？'))return;S.places=S.places.filter(p=>p.id!==id);await save();back()}
+
+/* 通知の初期設定 */
+function openRemDef(){RD=clone(validRems(S.settings.defRem));go('remDef')}
+V.remDef=()=>shell('予約の通知の初期設定',`<p class="muted">新しく予約を入れるとき、最初から入る通知です。</p><div class="card">${remEditor(RD||[])}</div>`,{back:1,bar:`<button class="btn" onclick="saveDefRem()">保存する</button>`});
+async function saveDefRem(){RD=readRems();S.settings.defRem=clone(RD);await save();toast('保存しました');back()}
+
+/* バックアップ */
+let BK=null;
+V.backup=()=>shell('バックアップ',`<p class="muted">データと写真はこのアプリの中に保存されています。iPhoneの写真アプリから消しても残りますが、ホーム画面のアイコンを削除すると消えます。ときどきバックアップを取っておくと安心です。</p>
+${BK?`<button class="btn" onclick="shareBK()">バックアップファイルを保存する</button>`:`<button class="btn" onclick="makeBK()">バックアップを作る</button>`}
+<button class="btn sub" onclick="restoreBK()">バックアップから戻す</button>`,{back:1});
+async function makeBK(){const ids=new Set();S.records.forEach(r=>{if(r.before)ids.add(r.before);if(r.after)ids.add(r.after)});S.favs.forEach(f=>{if(f.img)ids.add(f.img)});
+  const imgs={};for(const id of ids){const v=await getImg(id);if(v)imgs[id]=v}
+  BK=new File([JSON.stringify({v:1,S,imgs})],`trimlog-backup-${today()}.json`,{type:'application/json'});render();toast('準備できました。「保存する」を押してください')}
+function shareBK(){if(!BK)return;if(navigator.canShare&&navigator.canShare({files:[BK]}))navigator.share({files:[BK]}).catch(()=>{});
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(BK);a.download=BK.name;a.click()}}
+async function restoreBK(){const f=await pickFile('.json,application/json');if(!f)return;
+  let o;try{o=JSON.parse(await f.text())}catch(e){return toast('ファイルを読めませんでした')}
+  if(!o||!o.S)return toast('バックアップファイルではないようです');
+  if(!confirm('今のデータを消して、バックアップの内容に置き換えます。よろしいですか？'))return;
+  await dbClear();imgCache.clear();for(const[k,v]of Object.entries(o.imgs||{}))await dbSet(k,v);
+  S=o.S;fixS();await save();toast('戻しました');go('home')}
+
+/* ===== 予約 ===== */
+function newRes(dogId){dogId=dogId||firstDog();const ld=recsOf(dogId)[0];
+  R={id:uid(),_new:true,dogId,placeId:ld?.placeId||(S.places.find(p=>p.id!=='home')||S.places[0]).id,at:'',menu:'',rem:clone(validRems(S.settings.defRem))};go('resEdit')}
+function editRes(id){const x=resOf(id);if(!x)return;R=clone(x);R.rem=validRems(R.rem);go('resEdit')}
+function syncR(){if(!$('#r_at'))return;R.dogId=$('#r_dog').value;R.placeId=$('#r_place').value;R.at=$('#r_at').value;R.menu=$('#r_menu').value.trim();R.rem=readRems()}
+V.resEdit=()=>{if(!R)return V.home();
+  return shell(R._new?'予約を追加':'予約',`<div class="sec">予約</div><div class="card">${dogField('r_dog',R.dogId)}
+<label>お店<span class="req">必須</span></label><select id="r_place">${placeOpts(R.placeId)}</select>
+<button class="link" onclick="syncR();go('placeEdit',{from:'res'})">＋ 新しいお店を登録</button>
+<label>予約日時<span class="req">必須</span></label><input type="datetime-local" id="r_at" value="${esc(R.at)}">
+<label>予約内容（任意）</label><input id="r_menu" value="${esc(R.menu)}" placeholder="例：カット＋シャンプー、顔まわり短め"></div>
+<div class="sec">通知</div><div class="card"><p class="muted" style="margin-top:0">「◯日前の◯時」をいくつでも追加できます。</p>${remEditor(R.rem)}</div>
+${R._new?'':`<button class="btn sub" onclick="resCal()">予約と通知をカレンダーに追加</button>${placeBtns(place(R.placeId))}<button class="link danger" onclick="delRes()">この予約を削除</button>`}`,{back:"R=null;back()",bar:`<button class="btn" onclick="saveRes()">保存する</button>`})};
+async function saveRes(){syncR();
+  if(!R.placeId)return toast('お店を選んでください');
+  if(!R.at)return toast('予約日時を入れてください');
+  const x={id:R.id,dogId:R.dogId,placeId:R.placeId,at:R.at,menu:R.menu,rem:R.rem};if(R.fromRec)x.fromRec=R.fromRec;
+  const i=S.resv.findIndex(y=>y.id===R.id);if(i>=0)S.resv[i]=x;else S.resv.push(x);
+  await save();R._new=false;render();toast('保存しました。カレンダーにも追加できます')}
+async function delRes(){if(!confirm('この予約を削除しますか？'))return;S.resv=S.resv.filter(x=>x.id!==R.id);await save();R=null;back()}
+function resCal(){syncR();calItem(R)}
+function calRes(id){const x=resOf(id);if(x)calItem(x)}
+
+/* ===== 記録の入力 ===== */
+function newRec(dogId,fav){dogId=dogId||firstDog();const last=S.records.slice().sort((a,b)=>b.created-a.created)[0];const ld=recsOf(dogId)[0];
+  D={id:uid(),_new:true,_imgs:[],dogId,placeId:ld?.placeId||last?.placeId||'home',date:today(),time:nowTime(),before:null,after:null,
+    menus:ld?.menus?[...ld.menus]:['カット','シャンプー'],price:'',staff:ld?.staff||'',score:0,cond:'',condNote:'',memo:'',
+    nextAt:'',nextMenu:'',nplace:'',rem:clone(validRems(S.settings.defRem)),created:Date.now()};
+  if(fav){const f=favOf(fav);if(f){D.memo=f.memo||'';if(f.menus?.length)D.menus=[...f.menus];if(f.dogId&&dog(f.dogId))D.dogId=f.dogId}}
+  go('recEdit')}
+function editRec(id){const r=recOf(id),lk=linkedRes(id);
+  D={...clone(r),memo:memoOf(r),menus:r.menus||[],time:r.time||'',score:r.score||0,
+    nextAt:lk?.at||'',nextMenu:lk?.menu||'',nplace:lk?.placeId||'',rem:lk?validRems(lk.rem):clone(validRems(S.settings.defRem)),_imgs:[]};go('recEdit')}
+function syncD(){if(!$('#f_date'))return;D.dogId=$('#f_dog').value;D.date=$('#f_date').value;D.time=$('#f_time').value;D.placeId=$('#f_place').value;
+  const ch=[...document.querySelectorAll('.chip.on')].map(e=>e.dataset.m);
+  const ot=$('#f_mother').value.split(/[、,，\s　]+/).map(s=>s.trim()).filter(Boolean);
+  D.menus=[...new Set([...ch,...ot])];
+  D.price=$('#f_price').value.replace(/[^\d]/g,'');D.staff=$('#f_staff').value.trim();
+  D.cond=$('#f_cond').value;D.condNote=$('#f_condnote').value.trim();
+  D.memo=$('#f_memo').value;D.nextAt=$('#f_next').value;D.nplace=$('#f_nplace').value;D.nextMenu=$('#f_nextmenu').value.trim();D.rem=readRems()}
+function setScore(n){D.score=D.score===n?0:n;document.querySelectorAll('#f_stars button').forEach((b,i)=>b.classList.toggle('on',i<D.score))}
+function applyFav(id){if(!id)return;syncD();const f=favOf(id);if(!f)return;D.memo=f.memo||'';if(f.menus?.length)D.menus=[...f.menus];render();toast('「'+f.name+'」の内容を入れました')}
+V.recEdit=()=>{if(!D)return V.home();
+  const ph=(k,l)=>`<div><label>${l}</label><div class="photo" onclick="setPhoto('${k}')">${D[k]?`<img data-img="${D[k]}">`:'タップして<br>撮影・選択'}</div></div>`;
+  const other=(D.menus||[]).filter(m=>!MENUS.includes(m)).join('、');
+  const favSel=S.favs.length?`<select onchange="applyFav(this.value)" style="margin-bottom:8px"><option value="">★ お気に入りから入力</option>${S.favs.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select>`:'';
+  const dd=dog(D.dogId),iv=Number(dd?.interval)||0;
+  return shell(D._new?'今回のトリミングを記録':'記録の編集',`
+<div class="sec">いつ・どこで</div><div class="card">${dogField('f_dog',D.dogId)}
+<label>お店・場所<span class="req">必須</span></label><select id="f_place">${placeOpts(D.placeId)}</select>
+<button class="link" onclick="syncD();go('placeEdit',{from:'rec'})">＋ 新しいお店を登録</button>
+<div class="row"><div><label>来店日<span class="req">必須</span></label><input type="date" id="f_date" value="${esc(D.date)}"></div><div><label>時間<span class="req">必須</span></label><input type="time" id="f_time" value="${esc(D.time)}"></div></div></div>
+<div class="sec">写真</div><div class="card"><div class="row">${ph('before','ビフォー（任意）')}${ph('after','アフター')}</div>
+<p class="muted" style="margin-bottom:0">アフターだけでもOK。写真をタップすると撮り直せます。</p></div>
+<div class="sec">内容</div><div class="card">
+<label>やったこと（タップで選択）</label><div>${MENUS.map(m=>`<span class="chip ${(D.menus||[]).includes(m)?'on':''}" data-m="${esc(m)}" onclick="this.classList.toggle('on')">${esc(m)}</span>`).join('')}</div>
+<input id="f_mother" value="${esc(other)}" placeholder="その他（例：マイクロバブル）" style="margin-top:8px">
+<label>オーダー内容・メモ（任意）</label>${favSel}<textarea id="f_memo" placeholder="例：顔まわり短め、耳は丸く、体は5mm">${esc(D.memo)}</textarea>
+<div class="row"><div><label>金額（任意）</label><input id="f_price" type="number" inputmode="numeric" value="${esc(D.price)}" placeholder="例：6500"></div><div><label>担当者（任意）</label><input id="f_staff" value="${esc(D.staff)}" placeholder="例：山田さん"></div></div></div>
+<div class="sec">点数・体調</div><div class="card">
+<label>点数（任意・同じ★をもう一度押すと取り消し）</label><div class="stars" id="f_stars">${[1,2,3,4,5].map(n=>`<button type="button" class="${n<=(D.score||0)?'on':''}" onclick="setScore(${n})">★</button>`).join('')}</div>
+<label>体調（任意）</label><select id="f_cond"><option value="">選ばない</option>${CONDS.map(c=>`<option value="${c}" ${c===D.cond?'selected':''}>${c}</option>`).join('')}</select>
+<input id="f_condnote" value="${esc(D.condNote)}" placeholder="気になったこと（例：耳が少し赤い）" style="margin-top:8px"></div>
+<div class="sec">次回の予約（その場で予約したとき）</div><div class="card">
+<label>予約日時（予約していなければ空欄でOK）</label><input type="datetime-local" id="f_next" value="${esc(D.nextAt)}">
+<p class="muted" style="margin:6px 0 0">${iv>0?`予約しない場合は、来店から${iv}日たつとホームに「そろそろ予約」と出ます。`:'予約しない場合のお知らせはオフです（ワンちゃんの設定で変えられます）。'}</p>
+<label>予約するお店</label><select id="f_nplace">${placeOpts(D.nplace||D.placeId)}</select>
+<button class="link" onclick="syncD();go('placeEdit',{from:'nrec'})">＋ 新しいお店を登録</button>
+<label>予約内容（任意）</label><input id="f_nextmenu" value="${esc(D.nextMenu)}" placeholder="例：カット＋シャンプー">
+<label>通知（「◯日前の◯時」をいくつでも）</label>${remEditor(D.rem)}</div>`,{back:'cancelRec()',bar:`<button class="btn" onclick="saveRec()">保存する</button>`})};
+async function setPhoto(k){syncD();const f=await pickFile('image/*');if(!f)return;
+  try{const id=await putImg(await toPhoto(f));D._imgs.push(id);D[k]=id;if(D.crop)for(const s in D.crop)if(D.crop[s])delete D.crop[s][k[0]];render()}
+  catch(e){toast('写真を読み込めませんでした')}}
+async function saveRec(){syncD();
+  if(!D.placeId)return toast('お店・場所を選んでください');
+  if(!D.date)return toast('来店日を入れてください');
+  if(!D.time)return toast('来店の時間を入れてください');
+  const old=recOf(D.id);
+  for(const id of D._imgs)if(id!==D.before&&id!==D.after)await delImg(id);
+  if(old)for(const k of['before','after'])if(old[k]&&old[k]!==D[k])await delImg(old[k]);
+  const lk=linkedRes(D.id);
+  if(D.nextAt){const x={id:lk?.id||uid(),dogId:D.dogId,placeId:D.nplace||D.placeId,at:D.nextAt,menu:D.nextMenu,rem:D.rem,fromRec:D.id};if(lk)Object.assign(lk,x);else S.resv.push(x)}
+  else if(lk)S.resv=S.resv.filter(x=>x!==lk);
+  const r={...D};['_new','_imgs','nextAt','nextMenu','nplace','rem'].forEach(k=>delete r[k]);
+  const isNew=!old;if(old)Object.assign(old,r);else S.records.push(r);
+  await save();const id=D.id;D=null;
+  if(isNew){JUST=id;go('rec',id,{replace:true})}else{toast('保存しました');back()}}
+async function cancelRec(){for(const id of D._imgs)await delImg(id);D=null;back()}
+
+/* ===== 記録の詳細 ===== */
+V.rec=id=>{const r=recOf(id);if(!r)return V.home();const pl=place(r.placeId),dd=dog(r.dogId),lk=linkedRes(r.id);
+  const ph=(k,l)=>`<div><label>${l}</label><div class="photo">${r[k]?`<img data-img="${r[k]}">`:'なし'}</div></div>`;
+  const it=(l,v)=>v?`<div class="muted" style="margin-top:10px">${l}</div><div class="pre">${v}</div>`:'';
+  const photos=r.before?`<div class="row">${ph('before','ビフォー')}${ph('after','アフター')}</div>`:(r.after?`<div class="photo" style="max-width:320px;margin:0 auto"><img data-img="${r.after}"></div>`:'');
+  const hasUp=upcoming().some(u=>u.dogId===r.dogId);
+  const canRemind=!hasUp&&dd&&!dd.hidden&&Number(dd.interval)>0&&recsOf(r.dogId)[0]?.id===r.id;
+  const hasPhoto=!!cover(r);
+  const done=JUST===id?`<div class="card alert"><b style="font-size:18px">記録しました</b>
+${hasPhoto?`<p class="muted" style="margin:6px 0 0">このままインスタに投稿できます。</p><button class="btn big" onclick="openCompare('${r.id}')">インスタに投稿する</button>`:'<p class="muted" style="margin:6px 0 0">写真を入れると、インスタ用の画像が作れます。</p>'}
+${lk&&new Date(lk.at)>new Date()?`<button class="btn sub" onclick="calRes('${lk.id}')">次回の予約をカレンダーに追加</button>`:''}
+<button class="link" onclick="go('home')">ホームに戻る</button></div>`:'';
+  return shell(`${dd?.name||''} ${fmtDate(r.date)}`,`${done}${photos}
+<div class="card"><b style="font-size:17px">${esc(pl.name)}</b>${r.score?`<div>${starHtml(r.score)}</div>`:''}
+${it('来店日時',esc(visitStr(r)))}
+${it('やったこと',esc((r.menus||[]).join('・')))}
+${it('オーダー内容・メモ',esc(memoOf(r)))}
+${it('金額',yen(r.price))}
+${it('担当者',esc(r.staff))}
+${it('体調',esc([r.cond,r.condNote].filter(Boolean).join('　')))}
+${placeBtns(pl)}</div>
+${JUST===id?'':`${hasPhoto?`<button class="btn" onclick="openCompare('${r.id}')">インスタに投稿する</button>`:''}`}
+<button class="btn sub" onclick="go('order',{t:'r',id:'${r.id}'})">このカットをお店で見せる</button>
+${canRemind?`<button class="btn sub" onclick="remindCal('${r.id}')">「そろそろ予約」をカレンダーに追加（${fmtMD(dueDate(dd,r))}）</button>`:''}
+<div class="row" style="margin-top:8px"><button class="btn sub small" onclick="addFav('${r.id}')">★ お気に入りに登録</button><button class="btn sub small" onclick="editRec('${r.id}')">編集する</button></div>
+<button class="link danger" onclick="delRec('${r.id}')">この記録を削除</button>`,{back:JUST===id?"JUST=null;go('home')":1})};
+async function delRec(id){if(!confirm('この記録を削除しますか？（入れた予約は残ります）'))return;const r=recOf(id);await delImg(r.before);await delImg(r.after);
+  S.resv.forEach(x=>{if(x.fromRec===id)delete x.fromRec});S.records=S.records.filter(x=>x.id!==id);await save();JUST=null;back()}
+
+/* ===== お気に入り ===== */
+async function addFav(id){const r=recOf(id);if(!r)return;
+  const name=prompt('お気に入りの名前をつけてください',`${dog(r.dogId)?.name||''} ${fmtDate(r.date)}のカット`);if(!name)return;
+  const data=await getImg(cover(r));const img=data?await putImg(data):null;
+  S.favs.push({id:uid(),name:name.trim(),dogId:r.dogId,memo:memoOf(r),menus:[...(r.menus||[])],staff:r.staff||'',img});
+  await save();toast('お気に入りに登録しました')}
+V.fav=id=>{const f=favOf(id);if(!f)return V.home();
+  return `<div class="order"><button class="back" onclick="back()">‹ 戻る</button>
+<h2>${esc(f.name)}</h2><div class="muted">${esc(dog(f.dogId)?.name||'')}</div>
+${f.img?`<div class="photo big" style="max-width:420px;margin:12px auto 0"><img data-img="${f.img}"></div>`:''}
+${f.memo?`<div class="memo">${esc(f.memo)}</div>`:''}
+${(f.menus||[]).length?`<div style="font-size:18px;margin-top:12px">${esc(f.menus.join('・'))}</div>`:''}
+<button class="btn" style="margin-top:24px" onclick="go('order',{t:'f',id:'${f.id}'})">お店で見せる</button>
+<button class="btn sub" onclick="newRec('${dog(f.dogId)?f.dogId:''}','${f.id}')">この内容で記録する</button>
+<div class="row" style="margin-top:8px"><button class="btn sub small" onclick="renameFav('${f.id}')">名前を変える</button><button class="btn danger small" onclick="delFav('${f.id}')">お気に入りから外す</button></div></div>`};
+async function renameFav(id){const f=favOf(id);const n=prompt('新しい名前',f.name);if(!n)return;f.name=n.trim();await save();render()}
+async function delFav(id){if(!confirm('お気に入りから外しますか？（元の記録は消えません）'))return;const f=favOf(id);await delImg(f.img);S.favs=S.favs.filter(x=>x.id!==id);await save();back()}
+
+/* ===== お店で見せる ===== */
+V.orderPick=p=>{p=p||{};const ad=activeDogs();
+  if(!ad.length)return shell('お店で見せる',`<p class="muted">表示中のワンちゃんがいません。</p>`,{back:1});
+  const dg=p.dog&&dog(p.dog)?p.dog:(ad.length===1?ad[0].id:'');
+  if(!dg)return shell('お店で見せる',`<p class="muted">どのワンちゃんのカットを見せますか？</p>${ad.map(d=>{const r=recsOf(d.id)[0];
+    return `<div class="card list-item" onclick="go('orderPick',{dog:'${d.id}'})"><div class="photo">${r&&cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b style="font-size:18px">${esc(d.name)}</b><div class="muted">記録 ${recsOf(d.id).length}件</div></div><span class="muted">›</span></div>`}).join('')}`,{back:1});
+  const d=dog(dg),recs=recsOf(dg),favs=S.favs.filter(f=>f.dogId===dg);
+  const gi=(on,img,t,s)=>`<div class="gitem" onclick="${on}"><div class="photo">${img?`<img data-img="${img}">`:'写真なし'}</div><b>${t}</b>${s?`<div class="muted">${s}</div>`:''}</div>`;
+  return shell(`${d.name}のカットを選ぶ`,`<p class="muted">お店の人に見せたいカットを選んでください。見せる画面には写真・オーダー内容・担当者だけが出ます。</p>
+${favs.length?`<div class="sec">お気に入り</div><div class="grid2">${favs.map(f=>gi(`go('order',{t:'f',id:'${f.id}'})`,f.img,esc(f.name),'')).join('')}</div>`:''}
+<div class="sec">これまでのカット</div>${recs.length?`<div class="grid2">${recs.map(r=>gi(`go('order',{t:'r',id:'${r.id}'})`,cover(r),fmtDate(r.date),esc(place(r.placeId).name))).join('')}</div>`:'<p class="muted">まだ記録がありません。</p>'}`,{back:1})};
+V.order=p=>{p=p||{};let it=null;
+  if(p.t==='r'){const r=recOf(p.id);if(r)it={dogId:r.dogId,img:cover(r),memo:memoOf(r),staff:r.staff}}
+  else{const f=favOf(p.id);if(f)it={dogId:f.dogId,img:f.img,memo:f.memo,staff:f.staff}}
+  if(!it)return V.home();const d=dog(it.dogId);
+  return `<div class="order"><button class="back" onclick="back()">‹ 閉じる</button>
+<h2>${esc(d?.name||'')}${d?.breed?` <span class="muted">（${esc(d.breed)}）</span>`:''}</h2>
+${it.img?`<div class="photo big" style="max-width:420px;margin:12px auto 0"><img data-img="${it.img}"></div>`:''}
+${it.memo?`<div class="memo">${esc(it.memo)}</div>`:''}
+${it.staff?`<div class="muted" style="margin-top:12px">担当：${esc(it.staff)}</div>`:''}</div>`};
+AFTER.order=async()=>{try{if(!wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
+
+/* ===== 投稿画像 ===== */
+let CMP=null;const IMGS={};
+function openCompare(id){const r=recOf(id);CMP={id,size:'post',mode:r&&r.before&&r.after?'both':'after',style:0,off:[]};go('compare',id)}
+const cmpSize=()=>CMP.size==='story'?[1080,1920]:[1080,1350];
+function slots(){const r=recOf(CMP.id),[W,H]=cmpSize(),m=40,top=150,bot=90,ah=H-top-bot;
+  if(CMP.mode==='both'&&r.before&&r.after){
+    if(CMP.size==='post'){const w=(W-3*m)/2;return[{k:'b',id:r.before,l:'BEFORE',x:m,y:top,w,h:ah},{k:'a',id:r.after,l:'AFTER',x:2*m+w,y:top,w,h:ah}]}
+    const h=(ah-m)/2;return[{k:'b',id:r.before,l:'BEFORE',x:m,y:top,w:W-2*m,h},{k:'a',id:r.after,l:'AFTER',x:m,y:top+h+m,w:W-2*m,h}]}
+  return[{k:'o',id:r.after||r.before,l:r.after?'AFTER':'',x:m,y:top,w:W-2*m,h:ah}]}
+function cropOf(k){const r=recOf(CMP.id);if(!r.crop||typeof r.crop!=='object')r.crop={};const c=r.crop[CMP.size]=r.crop[CMP.size]||{};
+  let v=c[k];if(!v||!isFinite(v.z)||!isFinite(v.x)||!isFinite(v.y)||v.z<1)v=c[k]={z:1,x:0,y:0};return v}
+function rr(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()}
+function draw(){const cv=$('#cmp');if(!cv||!CMP)return;const r=recOf(CMP.id),[W,H]=cmpSize(),st=STYLES[CMP.style]||STYLES[0],x=cv.getContext('2d');
+  cv.width=W;cv.height=H;x.fillStyle=st.bg;x.fillRect(0,0,W,H);
+  x.fillStyle=st.text;x.textAlign='center';x.textBaseline='middle';x.font=`bold 54px ${FONT}`;
+  x.fillText(`${dog(r.dogId)?.name||''}　${fmtDate(r.date)}`,W/2,80);
+  for(const s of slots()){x.save();rr(x,s.x,s.y,s.w,s.h,24);x.clip();x.fillStyle='#e9e9e9';x.fillRect(s.x,s.y,s.w,s.h);
+    const im=IMGS[s.id];
+    if(im){const c=cropOf(s.k),base=Math.max(s.w/im.naturalWidth,s.h/im.naturalHeight),sc=base*c.z,dw=im.naturalWidth*sc,dh=im.naturalHeight*sc,mx=(dw-s.w)/2/s.w,my=(dh-s.h)/2/s.h;
+      c.x=Math.max(-mx,Math.min(mx,c.x));c.y=Math.max(-my,Math.min(my,c.y));
+      x.drawImage(im,s.x+(s.w-dw)/2+c.x*s.w,s.y+(s.h-dh)/2+c.y*s.h,dw,dh)}
+    x.restore();
+    if(s.l){x.font=`bold 34px ${FONT}`;const tw=x.measureText(s.l).width;x.fillStyle=st.label;rr(x,s.x+18,s.y+18,tw+40,60,30);x.fill();
+      x.fillStyle=st.labelText;x.textAlign='left';x.fillText(s.l,s.x+38,s.y+49);x.textAlign='center'}}
+  x.fillStyle=st.text;x.globalAlpha=.8;x.font=`30px ${FONT}`;x.fillText(APP_NAME,W/2,H-45);x.globalAlpha=1}
+function bindCmp(){const cv=$('#cmp');if(!cv)return;const pts=new Map();let act=null,raf=0;
+  const pos=e=>{const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height}};
+  const redraw=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;draw()})};
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);const p=pos(e);
+    if(!pts.size)act=slots().find(s=>p.x>=s.x&&p.x<=s.x+s.w&&p.y>=s.y&&p.y<=s.y+s.h)||null;pts.set(e.pointerId,p)});
+  cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId)||!act)return;e.preventDefault();
+    const prev=pts.get(e.pointerId),cur=pos(e),c=cropOf(act.k);
+    if(pts.size===1){c.x+=(cur.x-prev.x)/act.w;c.y+=(cur.y-prev.y)/act.h}
+    else{const o=[...pts.entries()].find(([id])=>id!==e.pointerId)[1];const d0=Math.hypot(prev.x-o.x,prev.y-o.y),d1=Math.hypot(cur.x-o.x,cur.y-o.y);
+      if(d0>0)c.z=Math.min(5,Math.max(1,c.z*d1/d0));c.x+=(cur.x-prev.x)/2/act.w;c.y+=(cur.y-prev.y)/2/act.h}
+    pts.set(e.pointerId,cur);redraw()});
+  const end=e=>{if(!pts.delete(e.pointerId))return;if(!pts.size){act=null;save()}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end)}
+function tagList(){const r=recOf(CMP.id),p=place(r.placeId);return[...new Set([shopTag(p),...tagsOf(p),APP_TAG].filter(Boolean))]}
+const tagText=()=>tagList().filter(t=>!CMP.off.includes(t)).join(' ');
+function toggleTag(i){const t=tagList()[i];CMP.off=CMP.off.includes(t)?CMP.off.filter(x=>x!==t):[...CMP.off,t];render()}
+function setCmp(k,v){CMP[k]=k==='style'?Number(v):v;render()}
+async function resetCrop(){const r=recOf(CMP.id);if(r.crop&&r.crop[CMP.size])for(const s of slots())delete r.crop[CMP.size][s.k];await save();draw()}
+V.compare=id=>{const r=recOf(id);if(!r)return V.home();
+  if(!CMP||CMP.id!==id)CMP={id,size:'post',mode:r.before&&r.after?'both':'after',style:0,off:[]};
+  if(!r.before&&!r.after)return shell('インスタに投稿',`<p>写真がありません。記録を編集して写真を入れてください。</p>`,{back:1});
+  const both=r.before&&r.after;if(!both)CMP.mode='after';
+  const seg=(k,obj)=>`<div class="seg" style="margin-top:8px">${Object.entries(obj).map(([v,l])=>`<button class="${String(CMP[k])===v?'on':''}" onclick="setCmp('${k}','${v}')">${esc(l)}</button>`).join('')}</div>`;
+  const tags=tagList().map((t,i)=>`<span class="tag ${CMP.off.includes(t)?'off':''}" onclick="toggleTag(${i})">${esc(t)}</span>`).join('');
+  return shell('インスタに投稿',`${both?seg('mode',MODES):''}${seg('size',SIZES)}
+<canvas id="cmp"></canvas><p class="muted" style="text-align:center;margin-top:4px">写真を指で動かせます。2本指で拡大・縮小　<a href="javascript:resetCrop()" style="color:var(--main)">元に戻す</a></p>
+<label>ハッシュタグ（押すとオン・オフ）</label><div>${tags}</div>
+<button class="btn big" onclick="postNow()">インスタに投稿する</button>
+<p class="muted" style="margin-top:0">ハッシュタグは自動でコピーされます。インスタの文章欄を長押しして「ペースト」してください。</p>
+<button class="link" onclick="copyText(tagText())">ハッシュタグだけコピー</button>
+<label>色</label>${seg('style',Object.fromEntries(STYLES.map((s,i)=>[String(i),s.name])))}`,{back:1})};
+AFTER.compare=async id=>{const r=recOf(id);if(!r)return;
+  for(const k of['before','after'])if(r[k]&&!IMGS[r[k]]){const d=await getImg(r[k]);if(d)IMGS[r[k]]=await loadSrc(d)}
+  draw();bindCmp()};
+function dataToFile(d,name){const[h,b]=d.split(',');const mime=h.match(/:(.*?);/)[1];const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new File([u],name,{type:mime})}
+function shareImg(){const cv=$('#cmp');if(!cv)return;const data=cv.toDataURL('image/jpeg',0.92);const f=dataToFile(data,'trimlog.jpg');
+  if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f]}).catch(()=>{});
+  else{const a=document.createElement('a');a.href=data;a.download='trimlog.jpg';a.click()}}
+function postNow(){const t=tagText();try{if(t&&navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).catch(()=>{})}catch(e){}
+  shareImg();if(t)toast('ハッシュタグをコピーしました。インスタの文章欄に貼り付けてね')}
+function copyText(t){const done=()=>toast('コピーしました');
+  function fb(){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done()}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,fb);else fb()}
+
+/* ===== カレンダー ===== */
+const icsDT=d=>d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'T'+p2(d.getHours())+p2(d.getMinutes())+'00';
+const icsUTC=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+function openIcs(evs){const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//trimlog//JP','CALSCALE:GREGORIAN'];
+  for(const v of evs){L.push('BEGIN:VEVENT','UID:'+uid()+'@trimlog','DTSTAMP:'+icsUTC(new Date()),'DTSTART:'+icsDT(v.s),'DTEND:'+icsDT(v.e),'SUMMARY:'+icsEsc(v.sum));
+    if(v.desc)L.push('DESCRIPTION:'+icsEsc(v.desc));if(v.loc)L.push('LOCATION:'+icsEsc(v.loc));
+    for(const a of v.als)L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(v.sum),a,'END:VALARM');L.push('END:VEVENT')}
+  L.push('END:VCALENDAR');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\r\n')],{type:'text/calendar'}));document.body.appendChild(a);a.click();a.remove()}
+function calItem(o){const d=dog(o.dogId),p=place(o.placeId),start=new Date(o.at);
+  if(!o.at||isNaN(start))return toast('予約日時が入っていません');
+  const end=new Date(start.getTime()+3600000),title=`${d?.name||''} トリミング（${p.name}）`;
+  const desc=[o.menu?'予約内容：'+o.menu:'',p.tel&&p.id!=='home'?'電話：'+p.tel:''].filter(Boolean).join('\n');const loc=p.id!=='home'?p.name:'';
+  const al=validRems(o.rem).map(x=>{const t=new Date(start);t.setDate(t.getDate()-x.d);const[h,m]=String(x.t||'09:00').split(':').map(Number);t.setHours(h||0,m||0,0,0);return t}).sort((a,b)=>a-b);
+  const evs=[{s:start,e:end,sum:title,desc,loc,als:al.slice(0,2).map(t=>'TRIGGER;VALUE=DATE-TIME:'+icsUTC(t))}];
+  al.slice(2).forEach(t=>evs.push({s:t,e:new Date(t.getTime()+900000),sum:'【通知】'+title,desc,loc,als:['TRIGGER:PT0M']}));
+  openIcs(evs);
+  if(al.length>2)toast('通知が3つ以上あるので、カレンダーで「すべてを追加」を選んでください')}
+function remindCal(id){const r=recOf(id),d=dog(r?.dogId);if(!r||!d)return;const p=place(r.placeId),t=dueDate(d,r);
+  const desc=[`前回：${fmtDate(r.date)} ${p.name}`].join('\n');
+  openIcs([{s:t,e:new Date(t.getTime()+900000),sum:`${d.name} そろそろトリミングの予約を`,desc,loc:'',als:['TRIGGER:PT0M']}])}
+
+/* ===== 起動 ===== */
+function fixS(){S.dogs=S.dogs||[];S.places=S.places||[];S.records=S.records||[];S.favs=S.favs||[];S.resv=S.resv||[];S.settings=S.settings||{};
+  if(!Array.isArray(S.settings.defRem))S.settings.defRem=clone(DEF_REM);
+  S.dogs.forEach(d=>{if(d.interval==null)d.interval=DEF_IV;if(!d.rTime)d.rTime=DEF_RT});
+  if(!S.places.some(p=>p.id==='home'))S.places.unshift({id:'home',name:'自宅',tags:['#おうちトリミング','#セルフトリミング']});
+  S.places.forEach(p=>p.tags=tagsOf(p));
+  S.records.forEach(r=>{if(!r.created)r.created=0;if(!r.date)r.date=today();
+    if(r.nextAt){if(!S.resv.some(x=>x.fromRec===r.id))S.resv.push({id:uid(),dogId:r.dogId,placeId:r.placeId,at:r.nextAt,menu:r.nextMenu||'',rem:validRems(r.rem),fromRec:r.id})}
+    delete r.nextAt;delete r.nextMenu;delete r.rem})}
+(async()=>{try{await openDB();const s=await dbGet('state');if(s)S=s;fixS();await save();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});render()}
+  catch(e){document.body.innerHTML='<p style="padding:20px">データを読み込めませんでした。Safariを開き直してください。</p>'}})();
+</script>
+</body>
+</html>
