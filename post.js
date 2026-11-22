@@ -332,3 +332,5 @@ function order(){if(!screen().includes('お店で見せる'))return;const m=docu
 function run(){try{rename()}catch(e){}try{rank()}catch(e){}try{home()}catch(e){}try{order()}catch(e){}try{xScanResv()}catch(e){}}
 new MutationObserver(run).observe(document.body,{childList:true,subtree:true});setInterval(run,800);run();
 })();
+/* ---- 記録タブ・共有ボタンの調整 ---- */
+(function(){const t0=window.toast;window.toast=function(m){if(typeof m==='string'&&m.includes('インスタを選んで'))m=(m.includes('コピー')?'ハッシュタグをコピーしました。':'')+'インスタやLINEなど、送り先を選んでください';return t0.apply(this,[m].concat([].slice.call(arguments,1)))};const f=()=>{const h=document.querySelector('header h1');const t=h?String(h.dataset.orig||h.textContent).trim():'';const b=document.getElementById('x_dog');if(b)b.style.display=(t==='記録')?'none':'';document.querySelectorAll('button').forEach(e=>{if(e.textContent.trim()==='これまでの記録'){e.textContent='トリミングオーダー履歴';e.style.fontSize='14px'}const n=e.firstChild;if(n&&n.nodeType===3&&n.data.trim()==='インスタに投稿する')n.data='インスタ・LINEで共有'})};new MutationObserver(f).observe(document.body,{childList:true,subtree:true});f()})();
