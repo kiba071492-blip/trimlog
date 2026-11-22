@@ -334,3 +334,42 @@ new MutationObserver(run).observe(document.body,{childList:true,subtree:true});s
 })();
 /* ---- 記録タブ・共有ボタンの調整 ---- */
 (function(){const t0=window.toast;window.toast=function(m){if(typeof m==='string'&&m.includes('インスタを選んで'))m=(m.includes('コピー')?'ハッシュタグをコピーしました。':'')+'インスタやLINEなど、送り先を選んでください';return t0.apply(this,[m].concat([].slice.call(arguments,1)))};const f=()=>{const h=document.querySelector('header h1');const t=h?String(h.dataset.orig||h.textContent).trim():'';const b=document.getElementById('x_dog');if(b)b.style.display=(t==='記録')?'none':'';document.querySelectorAll('button').forEach(e=>{if(e.textContent.trim()==='これまでの記録'){e.textContent='トリミングオーダー履歴';e.style.fontSize='14px'}const n=e.firstChild;if(n&&n.nodeType===3&&n.data.trim()==='インスタに投稿する')n.data='インスタ・LINEで共有'})};new MutationObserver(f).observe(document.body,{childList:true,subtree:true});f()})();
+/* ---- ワンちゃんの写真・共有ボタン・ランキング非表示 ---- */
+(function(){
+const st=document.createElement('style');
+st.textContent='#x_rank{display:none!important}.dphoto{width:56px;height:56px;flex:none;border-radius:50%;background:#f3e3e6;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden}.dphoto img{width:100%;height:100%;object-fit:cover}';
+document.head.appendChild(st);
+let PEND;
+const dogImg=(d,s)=>`<div class="dphoto" style="${s?`width:${s}px;height:${s}px;font-size:${s/2}px`:''}">${d&&d.photo?`<img data-img="${d.photo}">`:'🐶'}</div>`;
+const oEdit=V.dogEdit;
+V.dogEdit=id=>{PEND=undefined;const d=dog(id);const h=oEdit(id);
+  const box=`<div class="card" style="text-align:center"><div id="dp_box" style="display:inline-block">${dogImg(d,110)}</div><button class="link" onclick="xDogPhoto()">${d&&d.photo?'写真を変える':'写真を選ぶ'}</button>${d&&d.photo?'<button class="link danger" style="margin-top:0" onclick="xDogPhotoDel()">写真を消す</button>':''}</div>`;
+  return h.replace('<div class="card"><label>名前',box+'<div class="card"><label>名前')};
+window.xDogPhoto=async()=>{const f=await pickFile('image/*');if(!f)return;const data=await toPhoto(f);PEND=data;
+  const b=document.getElementById('dp_box');if(b)b.innerHTML=`<div class="dphoto" style="width:110px;height:110px"><img src="${data}"></div>`};
+window.xDogPhotoDel=()=>{PEND=null;const b=document.getElementById('dp_box');if(b)b.innerHTML=dogImg(null,110)};
+const oSave=window.saveDog;
+window.saveDog=async function(id){const nm=document.getElementById('f_name');if(!nm||!nm.value.trim())return oSave(id);
+  const n=S.dogs.length,p=PEND;await oSave(id);
+  const d=id?dog(id):(S.dogs.length>n?S.dogs[S.dogs.length-1]:null);
+  if(d&&p!==undefined){if(d.photo)await delImg(d.photo);d.photo=p?await putImg(p):null;await save();render()}
+  PEND=undefined};
+const t1=window.toast;
+window.toast=function(m){if(typeof m==='string'&&/インスタを選んで|送り先を選んで/.test(m))m=(m.includes('コピー')?'ハッシュタグをコピーしました。':'')+'インスタ・LINE・「画像を保存」から選べます';return t1.apply(this,[m].concat([].slice.call(arguments,1)))};
+function f(){
+  document.querySelectorAll('.card.list-item[onclick*="{dog:"]').forEach(c=>{if(c.dataset.xd)return;c.dataset.xd=1;
+    const m=(c.getAttribute('onclick')||'').match(/dog:'([^']+)'/);const d=m&&dog(m[1]);if(!d)return;
+    const ph=c.querySelector('.photo');if(ph)ph.outerHTML=dogImg(d);
+    const im=c.querySelector('.dphoto img');if(im)getImg(d.photo).then(v=>{if(v)im.src=v});
+    const b=document.createElement('button');b.className='minicall';b.textContent='編集';
+    b.onclick=e=>{e.stopPropagation();go('dogEdit',d.id)};c.insertBefore(b,c.lastElementChild)});
+  document.querySelectorAll(".card.list-item[onclick^=\"go('dogEdit'\"]").forEach(c=>{if(c.dataset.xd)return;c.dataset.xd=1;
+    const m=(c.getAttribute('onclick')||'').match(/dogEdit','([^']+)'/);const d=m&&dog(m[1]);if(!d)return;
+    c.insertAdjacentHTML('afterbegin',dogImg(d));const im=c.querySelector('.dphoto img');if(im)getImg(d.photo).then(v=>{if(v)im.src=v})});
+  document.querySelectorAll('.savebar button').forEach(b=>{const oc=b.getAttribute('onclick')||'';
+    if(/(tpPost|bkPost)\('save'\)/.test(oc)){b.style.display='none';return}
+    if(/(tpPost|bkPost)\('insta'\)/.test(oc)){const n=b.firstChild;if(n&&n.nodeType===3&&n.data!=='画像を共有・保存')n.data='画像を共有・保存'}});
+  document.querySelectorAll('main button,main a').forEach(b=>{const n=b.firstChild;if(n&&n.nodeType===3&&/インスタに投稿/.test(n.data))n.data='投稿画像を作る'});
+}
+new MutationObserver(f).observe(document.body,{childList:true,subtree:true});f();
+})();
