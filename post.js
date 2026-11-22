@@ -269,4 +269,32 @@ window.tpPost=k=>{const r=recOf(T.id);if(!r)return;const b=T.blobs&&T.blobs[k];i
   const name='trimming_'+String(r.date||'').replace(/-/g,'')+(k==='reel'?'_reel':'')+'.jpg';
   share([new File([b],name,{type:'image/jpeg'})],caption(r),k)};
 window.postNow=function(id){const rid=typeof id==='string'&&recOf(id)?id:(typeof JUST==='string'&&recOf(JUST)?JUST:(JUST&&JUST.id));if(rid)go('compare',rid)};
+})();;(function(){
+const PH='カット＋シャンプー';
+const st=document.createElement('style');
+st.textContent='input[type="datetime-local"],input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box}input[type="datetime-local"]::-webkit-date-and-time-value{text-align:left}.rsc{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}.rsc button{border:1.5px solid #eee;background:#fff;color:#666;border-radius:999px;padding:8px 14px;font-size:14px}.rsc button.on{background:var(--main);border-color:var(--main);color:#fff;font-weight:bold}';
+document.head.appendChild(st);
+const SEP=/[、，,＋+]/;
+const parse=v=>String(v||'').split(SEP).map(s=>s.trim()).filter(Boolean);
+function join(list){const m=MENUS.filter(x=>list.includes(x)),o=list.filter(x=>!MENUS.includes(x));return m.join('＋')+(m.length&&o.length?'、':'')+o.join('、')}
+function sync(inp,box){const t=parse(inp.value);box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',t.includes(b.dataset.m)))}
+function attach(inp){if(inp.dataset.rsc)return;inp.dataset.rsc=1;
+  const box=document.createElement('div');box.className='rsc';
+  box.innerHTML=MENUS.map(m=>`<button type="button" data-m="${m}">${m}</button>`).join('');
+  box.onclick=e=>{const b=e.target.closest('button');if(!b)return;let t=parse(inp.value);const m=b.dataset.m;
+    t=t.includes(m)?t.filter(x=>x!==m):[...t,m];inp.value=join(t);
+    inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));sync(inp,box)};
+  inp.addEventListener('input',()=>sync(inp,box));
+  inp.placeholder='その他（例：顔まわり短め）';
+  inp.parentNode.insertBefore(box,inp);sync(inp,box)}
+function scan(){document.querySelectorAll('input,textarea').forEach(i=>{if((i.placeholder||'').includes(PH))attach(i)})}
+function fix(){
+  try{if(typeof S!=='undefined'&&S&&S.settings){const c=S.settings.tp=S.settings.tp||{};if(c.size!=='reel'){c.size='reel';save();setTimeout(render,0);return}}}catch(e){}
+  document.querySelectorAll(`button[onclick*="Post('post')"]`).forEach(b=>b.remove());
+  document.querySelectorAll(`button[onclick*="Post('reel')"]`).forEach(b=>{if(b.dataset.one)return;b.dataset.one=1;const t=b.firstChild;if(t&&t.nodeType===3)t.data='インスタに投稿する';b.style.fontSize='16px'});
+  const s=document.querySelector(`button[onclick*="tpSet('size'"]`);
+  if(s){const g=s.parentNode;[g.previousElementSibling,g,g.nextElementSibling].forEach(e=>{if(e)e.style.display='none'})}
+}
+new MutationObserver(()=>{scan();fix()}).observe(document.body,{childList:true,subtree:true});scan();fix();
 })();
+
