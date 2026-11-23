@@ -448,3 +448,20 @@ AFTER.resEdit=p=>{if(oRE)oRE(p);if(window.xScanResv)xScanResv();
 try{if(typeof db!=='undefined'&&db&&V[view])render()}catch(e){}
 })();
 /* ===== 後半ここまで ===== */
+/* ===== 追加：新しいワンちゃんの写真 ===== */
+(function(){
+let pic=null,known=null;
+const oPick=window.xDogPhoto;
+window.xDogPhoto=async id=>{
+  if(!id)known=S.dogs.map(d=>d.id);
+  await oPick(id);
+  if(!id){const im=document.querySelector('#x_dpc img');pic=im?im.src:null}};
+const oDel=window.xDogPhotoDel;
+window.xDogPhotoDel=async id=>{await oDel(id);if(!id&&!document.querySelector('#x_dpc img'))pic=null};
+const oR=window.render;
+window.render=function(...a){const v=oR.apply(this,a);
+  if(pic&&known){const d=S.dogs.find(x=>!known.includes(x.id));
+    if(d){if(!d.icon)d.icon=pic;pic=null;known=null;Promise.resolve(save()).then(()=>oR())}}
+  return v};
+})();
+/* ===== 追加ここまで ===== */
