@@ -568,25 +568,6 @@ window.render=function(...a){const v=oR.apply(this,a);
   return v};
 })();
 /* ===== 追加ここまで ===== */
-/* ===== 追加：バックアップ保存のお知らせ ===== */
-(function(){
-const btns=()=>[...document.querySelectorAll('main button')];
-const isMk=b=>/作る|作成/.test(b.textContent)&&!/復元/.test(b.textContent);
-const sv=()=>btns().find(b=>/保存|共有/.test(b.textContent)&&!/復元|作る|作成|削除/.test(b.textContent));
-function pop(){
-  if(document.getElementById('x_bkpop')||!sv())return;
-  const w=document.createElement('div');w.id='x_bkpop';
-  w.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;display:flex;align-items:center;justify-content:center;padding:24px';
-  w.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;max-width:340px;width:100%"><b style="font-size:17px">バックアップができました</b><p style="margin:10px 0 4px">まだ保存されていません。「保存する」を押して、「“ファイル”に保存」を選んでください。</p><button class="btn" id="x_bkgo">保存する</button><button class="link" id="x_bkno" style="width:100%">あとで</button></div>';
-  document.body.appendChild(w);
-  w.querySelector('#x_bkgo').onclick=()=>{w.remove();const b=sv();if(b)b.click()};
-  w.querySelector('#x_bkno').onclick=()=>w.remove()}
-document.addEventListener('click',e=>{
-  const b=e.target.closest&&e.target.closest('main button');
-  if(!b||!isMk(b))return;
-  let t=0;const iv=setInterval(()=>{if(sv()){clearInterval(iv);pop()}else if(++t>150)clearInterval(iv)},200)},true);
-})();
-/* ===== お知らせここまで ===== */
 /* ===== 追加3：お知らせの誤表示と「作り方」の位置 ===== */
 (function(){
 const onBk=()=>{const h=document.querySelector('header h1');return !!h&&/バックアップ/.test(h.textContent)};
