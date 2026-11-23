@@ -970,3 +970,4 @@ window.addEventListener('click',e=>{if(!e.target.closest)return;
   e.preventDefault();e.stopPropagation();go('fav',f.id)},true);
 })();
 /* ===== お気に入りの項目は設定から・アルバムから開くここまで ===== */
+https://github.com/kiba071492-blip/trimlog/edit/main/index.html
