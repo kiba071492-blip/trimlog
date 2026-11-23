@@ -565,3 +565,16 @@ function fix(){
 new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
 })();
 /* ===== 予約の見た目ここまで ===== */
+/* ===== 追加：予約のボタンを下の段に ===== */
+(function(){
+const q=(s,r)=>[...(r||document).querySelectorAll(s)];
+function fix(){
+  q('a.minicall[href^="tel:"]').forEach(t=>{if(t.closest('#xshops'))return;const par=t.parentElement;if(!par||par.classList.contains('xbtns'))return;
+    const w=document.createElement('div');w.className='xbtns';w.style.cssText='flex-basis:100%;display:flex;gap:8px;flex-wrap:wrap;order:9;margin-top:10px';
+    par.style.flexWrap='wrap';q('a.minicall',par).forEach(a=>{if(a.parentElement===par){a.style.marginLeft='0';w.appendChild(a)}});
+    w.onclick=e=>{if(e.target===w)e.stopPropagation()};par.appendChild(w)});
+  q('.xbtns').forEach(w=>{const par=w.parentElement;if(!par)return;q('a.minicall',par).forEach(a=>{if(a.parentElement===par){a.style.marginLeft='0';w.appendChild(a)}})});
+}
+new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
+})();
+/* ===== ボタン下の段ここまで ===== */
