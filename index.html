@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="トリミングログ">
 <meta name="theme-color" content="#ffffff">
 <title>トリミングログ</title>
-<style>
+<style>あ
 :root{--main:#e8758f;--bg:#fff7f8;--text:#333;--sub:#888;--line:#f3e3e6}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:-apple-system,"Hiragino Sans",sans-serif;background:var(--bg);color:var(--text)}
@@ -641,7 +641,7 @@ function fixS(){S.dogs=S.dogs||[];S.places=S.places||[];S.records=S.records||[];
 (async()=>{try{await openDB();const s=await dbGet('state');if(s)S=s;fixS();await save();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});render()}
   catch(e){document.body.innerHTML='<p style="padding:20px">データを読み込めませんでした。Safariを開き直してください。</p>'}})();
 </script>
-<script src="post.js?v=2"></script>
+<script src="post.js?v=3"></script>
 </body>
 </html>
 
