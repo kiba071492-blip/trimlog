@@ -580,82 +580,90 @@ new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childLis
 /* ===== ボタン下の段ここまで ===== */
 /* ===== 追加：アルバム ===== */
 (function(){
-const FN='"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif';
 const KINDS={xmas:'クリスマス',ny:'お正月',grow:'成長アルバム',year:'1年まとめ'};
 const SHAPES={reel:['縦長（9:16）',1080,1920],feed:['少し縦長（4:5）',1080,1350],sq:['正方形',1080,1080]};
-const CN=['ピンク','ダーク','ミント','ベージュ','スカイ','モノクロ'];
+const FLT={all:'すべて',after:'アフター',before:'ビフォー',own:'普段の写真'};
+const FN=typeof FONT!=='undefined'?FONT:'"Hiragino Sans",sans-serif';
 const V={scr:'top',dog:'',flt:'all',key:'',file:null};
 const M={kind:'xmas',per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],file:null,t:0};
-const SRC={},IMS={},KEYS={};let root=null,tok=0,LIST=[];
+const D={list:[],tags:['お散歩','お出かけ','誕生日'],tagOf:{}};
+const SRC={},IMS={},KEYS={};let root=null,tok=0;
 
-/* 普段の写真の保存場所 */
+/* 保存場所 */
 let dbp=null;
 const adb=()=>dbp=dbp||new Promise((res,rej)=>{const q=indexedDB.open('trimlog_album',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
 async function aget(k){const d=await adb();return new Promise(res=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)})}
 async function aset(k,v){const d=await adb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite'),s=t.objectStore('kv');if(v===undefined)s.delete(k);else s.put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
-const ready=aget('list').then(v=>{if(Array.isArray(v))LIST=v}).catch(()=>{});
-const saveList=()=>aset('list',LIST).catch(()=>alert('保存できませんでした'));
+const ready=aget('data').then(v=>{if(v&&typeof v==='object'){if(Array.isArray(v.list))D.list=v.list;if(Array.isArray(v.tags))D.tags=v.tags;if(v.tagOf&&typeof v.tagOf==='object')D.tagOf=v.tagOf}}).catch(()=>{});
+const saveD=()=>aset('data',D).catch(()=>alert('保存できませんでした'));
 
 const css=document.createElement('style');
-css.textContent='#xa{position:fixed;inset:0;z-index:9999;background:#f7f7f7;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 110px);font-family:'+FN+';color:#333;box-sizing:border-box}#xa .xa-h{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}#xa .xa-h b{font-size:17px}#xa .xa-b{border:none;background:#e9e9e9;border-radius:10px;padding:8px 12px;font-size:15px;color:#333;width:auto;margin:0}#xa .xa-row{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px;margin-bottom:10px}#xa .xa-av{width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fde8ee;display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}#xa .xa-av img{width:100%;height:100%;object-fit:cover}#xa .xa-s{font-size:12px;color:#888}#xa .xa-btns{display:flex;gap:8px;margin-bottom:12px}#xa .xa-btns button{flex:1;width:auto;margin:0}#xa .xa-go{border:none;border-radius:12px;background:#e8758f;color:#fff;font-size:16px;font-weight:bold;padding:13px}#xa .xa-go2{border:2px solid #e8758f;border-radius:12px;background:#fff;color:#e8758f;font-size:16px;font-weight:bold;padding:11px}#xa .xa-chips{display:flex;gap:6px;margin-bottom:4px}#xa .xa-chip{border:1px solid #ddd;background:#fff;border-radius:20px;padding:6px 14px;font-size:14px;color:#555;width:auto;margin:0}#xa .xa-chip.on{background:#e8758f;border-color:#e8758f;color:#fff}#xa .xa-m{font-size:14px;font-weight:bold;margin:16px 0 8px}#xa .xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}#xa .xa-t{position:relative;aspect-ratio:1/1;background:#eee;border-radius:6px;overflow:hidden}#xa .xa-t img{width:100%;height:100%;object-fit:cover;display:block}#xa .xa-t.on{outline:4px solid #e8758f;outline-offset:-4px}#xa .xa-tag{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 5px}#xa .xa-ck{position:absolute;top:4px;right:4px;background:#e8758f;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xa .xa-c{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px}#xa .xa-l{font-size:13px;color:#888;margin:12px 0 6px}#xa .xa-l:first-child{margin-top:0}#xa select,#xa input{width:100%;font-size:16px;padding:10px;border-radius:10px;border:1px solid #ddd;background:#fff;box-sizing:border-box;color:#333}#xa .xa-del{width:100%;margin-top:10px;border:none;background:none;color:#d33;font-size:15px;padding:12px}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}#xa .xa-bar{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(env(safe-area-inset-bottom) + 10px);background:rgba(255,255,255,.97);box-shadow:0 -1px 6px rgba(0,0,0,.08)}#xa .xa-bar .xa-go{width:100%}';
+css.textContent='#xa{position:fixed;inset:0;z-index:10;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}body.xa-open .tabbar{z-index:12}body.xa-make .tabbar{display:none}#xa .savebar{z-index:13}body.xa-open .tabbar button.on{color:#aaa;border-top-color:transparent}body.xa-open #xatab{color:var(--main);border-top-color:var(--main)}.xa-av{width:56px;height:56px;border-radius:50%;overflow:hidden;background:var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:26px}.xa-av img{width:100%;height:100%;object-fit:cover}.xa-chips{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;margin:4px 0}.xa-chips .chip{flex:none;white-space:nowrap}.xa-m{font-size:14px;font-weight:bold;margin:18px 0 8px}.xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.xa-t{position:relative;aspect-ratio:1/1;background:var(--line);border-radius:8px;overflow:hidden}.xa-t img{width:100%;height:100%;object-fit:cover;display:block}.xa-t.on{outline:4px solid var(--main);outline-offset:-4px}.xa-lb{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 6px}.xa-ck{position:absolute;top:4px;right:4px;background:var(--main);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}#xa button.minicall{font-family:inherit}';
 document.head.appendChild(css);
 
 /* 共通 */
 const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const msg=m=>{try{if(typeof toast==='function'){toast(m);return}}catch(e){}alert(m)};
 const dogs=()=>S.dogs||[];
-const dogOf=id=>dogs().find(d=>d.id===id)||{};
-const dname=id=>dogOf(id).name||'';
+const dname=id=>(dogs().find(d=>d.id===id)||{}).name||'';
 const hid=d=>!!(d.hidden||d.hide||d.off);
 const ymd=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-function rdate(r){const v=r.date||r.visit||r.visitAt||r.at||r.when||r.dt||r.day||'';return typeof v==='number'?ymd(v):String(v).slice(0,10)}
+function rdate(r){const v=r.date||r.visit||r.at||'';return typeof v==='number'?ymd(v):String(v).slice(0,10)}
 const fmt=d=>{const m=String(d||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?m[1]+'.'+m[2].padStart(2,'0')+'.'+m[3].padStart(2,'0'):''};
 function shopName(r){const id=r.placeId||r.shopId||r.place||r.shop;const p=(S.places||[]).find(x=>x.id===id);return p?(p.name||''):''}
 const season=()=>M.kind==='xmas'||M.kind==='ny';
+const tagsOf=k=>D.tagOf[k]||[];
 
 function items(dogId){const out=[];
-  (S.records||[]).filter(r=>r.dogId===dogId).forEach(r=>{const d=rdate(r),sh=shopName(r);
+  (S.records||[]).filter(r=>(r.dogId||r.dog)===dogId).forEach(r=>{const d=rdate(r),sh=shopName(r);
     if(r.before)out.push({key:'r'+r.id+'b',src:'rec',img:r.before,date:d,label:'ビフォー',shop:sh});
     if(r.after)out.push({key:'r'+r.id+'a',src:'rec',img:r.after,date:d,label:'アフター',shop:sh})});
-  LIST.filter(a=>a.dogId===dogId).forEach(a=>out.push({key:'p'+a.id,src:'own',img:a.id,date:a.date||'',label:'',memo:a.memo||'',a}));
+  D.list.filter(a=>a.dogId===dogId).forEach(a=>out.push({key:'p'+a.id,src:'own',img:a.id,date:a.date||'',label:'',memo:a.memo||'',a}));
   out.forEach(it=>KEYS[it.key]=it);
   return out.sort((x,y)=>x.date<y.date?1:x.date>y.date?-1:(x.label==='ビフォー'?1:-1))}
+function flt(L){const f=V.flt;if(f==='after')return L.filter(x=>x.label==='アフター');if(f==='before')return L.filter(x=>x.label==='ビフォー');if(f==='own')return L.filter(x=>x.src==='own');
+  if(f.indexOf('t:')===0){const t=f.slice(2);return L.filter(x=>tagsOf(x.key).includes(t))}return L}
 async function srcOf(it){if(SRC[it.key])return SRC[it.key];let s=null;try{s=it.src==='rec'?await getImg(it.img):await aget('img_'+it.img)}catch(e){}if(s&&typeof s!=='string')s=URL.createObjectURL(s);if(s)SRC[it.key]=s;return s}
 async function imOf(it){if(IMS[it.key])return IMS[it.key];const s=await srcOf(it);if(!s)return null;const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});if(im)IMS[it.key]=im;return im}
 function shrink(file){return new Promise(res=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{const k=Math.min(1,1600/Math.max(i.naturalWidth,i.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.85))};i.onerror=()=>{URL.revokeObjectURL(u);res(null)};i.src=u})}
 function shareFile(f){if(!f){msg('準備中です。もう一度押してください');return}if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f]}).catch(()=>{});else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}
 
 /* 画面 */
-function head(t,back){return '<div class="xa-h"><button class="xa-b" data-a="'+(back?'back':'close')+'">'+(back?'‹ 戻る':'閉じる')+'</button><b>'+E(t)+'</b><span style="width:64px"></span></div>'}
+const head=(t,back)=>'<header>'+(back?'<button class="back" data-a="back">‹ 戻る</button>':'')+'<h1>'+E(t)+'</h1></header>';
+function chips(withNew){const c=(v,t)=>'<button class="chip'+(V.flt===v?' on':'')+'" data-a="flt" data-id="'+E(v)+'">'+E(t)+'</button>';
+  return '<div class="xa-chips">'+Object.keys(FLT).map(k=>c(k,FLT[k])).join('')+D.tags.map(t=>c('t:'+t,'#'+t)).join('')+(withNew?'<button class="chip mine" data-a="newtag">＋ タグ</button>':'')+'</div>'}
+function thumbLb(it){if(it.src==='rec')return it.label;const t=tagsOf(it.key)[0];return t?'#'+t:''}
 function scrTop(){const ds=dogs().slice().sort((a,b)=>hid(a)-hid(b));
-  return head('アルバム',0)+(ds.length?ds.map(d=>{const L=items(d.id),c=L.find(x=>x.label==='アフター')||L[0];
-    return '<div class="xa-row" data-a="dog" data-id="'+E(d.id)+'"><div class="xa-av">'+(c?'<img data-k="'+E(c.key)+'">':'🐶')+'</div><div style="flex:1;min-width:0"><b>'+E(d.name||'名前なし')+'</b>'+(hid(d)?' <span class="xa-s">（非表示中）</span>':'')+'<div class="xa-s">写真 '+L.length+'枚</div></div><span class="xa-s" style="font-size:22px">›</span></div>'}).join(''):'<p class="xa-s">先にワンちゃんを登録してください。</p>')}
-function scrDog(){let L=items(V.dog);if(V.flt==='rec')L=L.filter(x=>x.src==='rec');if(V.flt==='own')L=L.filter(x=>x.src==='own');
-  const chip=(k,t)=>'<button class="xa-chip'+(V.flt===k?' on':'')+'" data-a="flt" data-id="'+k+'">'+t+'</button>';
-  let h=head(dname(V.dog)+'のアルバム',1)+'<div class="xa-btns"><button class="xa-go2" data-a="add">＋ 写真を追加</button><button class="xa-go" data-a="make">🎄 画像を作る</button></div><div class="xa-chips">'+chip('all','すべて')+chip('rec','トリミング')+chip('own','普段の写真')+'</div>';
-  if(!L.length)return h+'<p class="xa-s" style="text-align:center;margin-top:30px">まだ写真がありません。<br>「＋ 写真を追加」から入れられます。</p>';
-  let cur=null;L.forEach(it=>{const m=(it.date||'').slice(0,7);if(m!==cur){if(cur!==null)h+='</div>';cur=m;const mm=m.match(/^(\d{4})-(\d{2})/);h+='<div class="xa-m">'+(mm?mm[1]+'年'+Number(mm[2])+'月':'日付なし')+'</div><div class="xa-g">'}
-    h+='<div class="xa-t" data-a="open" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'">'+(it.src==='rec'?'<span class="xa-tag">✂ '+(it.label==='ビフォー'?'ビフォー':'アフター')+'</span>':'')+'</div>'});
-  return h+'</div>'}
-function scrOpen(){const it=KEYS[V.key];if(!it){V.scr='dog';return scrDog()}
-  let h=head(fmt(it.date)||'写真',1)+'<div class="xa-c"><img data-k="'+E(it.key)+'" style="width:100%;border-radius:10px;display:block"></div><div class="xa-c">';
-  if(it.src==='rec')h+='<div>✂ トリミング（'+it.label+'）</div>'+(it.shop?'<div class="xa-s" style="margin-top:4px">'+E(it.shop)+'</div>':'')+'<p class="xa-s">日付などはトリミングの記録から変えられます。</p>';
-  else h+='<div class="xa-l">日付</div><input type="date" data-a="date" value="'+E(it.date)+'"><div class="xa-l">メモ</div><input type="text" data-a="memo" value="'+E(it.memo)+'" placeholder="お散歩、誕生日など">';
-  return h+'</div><button class="xa-go" style="width:100%" data-a="share1">共有・保存</button>'+(it.src==='own'?'<button class="xa-del" data-a="del">この写真を消す</button>':'')}
+  return head('アルバム',0)+'<main class="pb">'+(ds.length?ds.map(d=>{const L=items(d.id),c=L.find(x=>x.label==='アフター')||L[0];
+    return '<div class="card list-item" data-a="dog" data-id="'+E(d.id)+'"><div class="xa-av">'+(c?'<img data-k="'+E(c.key)+'">':'🐶')+'</div><div style="flex:1;min-width:0"><b>'+E(d.name||'名前なし')+'</b>'+(hid(d)?' <span class="muted">（非表示中）</span>':'')+'<div class="muted">写真 '+L.length+'枚</div></div><span class="muted" style="font-size:22px">›</span></div>'}).join(''):'<p class="muted">先にワンちゃんを登録してください。</p>')+'</main>'}
+function scrDog(){const L=flt(items(V.dog));
+  let h=head(dname(V.dog)+'のアルバム',1)+'<main class="pb"><div class="row"><button class="btn sub" data-a="add">＋ 写真を追加</button><button class="btn" data-a="make">画像を作る</button></div>'+chips(true);
+  if(!L.length)h+='<p class="muted" style="text-align:center;margin:30px 0">写真がありません</p>';
+  else{let cur=null;L.forEach(it=>{const m=(it.date||'').slice(0,7);if(m!==cur){if(cur!==null)h+='</div>';cur=m;const mm=m.match(/^(\d{4})-(\d{2})/);h+='<div class="xa-m">'+(mm?mm[1]+'年'+Number(mm[2])+'月':'日付なし')+'</div><div class="xa-g">'}
+    const lb=thumbLb(it);h+='<div class="xa-t" data-a="open" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'">'+(lb?'<span class="xa-lb">'+E(lb)+'</span>':'')+'</div>'});h+='</div>'}
+  return h+'<button class="link" data-a="tags">タグを整理する</button></main>'}
+function scrOpen(){const it=KEYS[V.key];if(!it){V.scr='dog';return scrDog()}const my=tagsOf(it.key);
+  let h=head(fmt(it.date)||'写真',1)+'<main class="pb"><div class="card"><div class="photo big" style="aspect-ratio:auto"><img data-k="'+E(it.key)+'" style="height:auto"></div></div><div class="card">';
+  if(it.src==='rec')h+='<b>トリミング（'+it.label+'）</b>'+(it.shop?'<div class="muted" style="margin-top:4px">'+E(it.shop)+'</div>':'')+'<p class="muted">日付などはトリミングの記録から変えられます。</p>';
+  else h+='<label>日付</label><input type="date" data-a="date" value="'+E(it.date)+'"><label>メモ</label><input type="text" data-a="memo" value="'+E(it.memo)+'" placeholder="お散歩、誕生日など">';
+  h+='</div><div class="card"><label>タグ（押すとつく／外れる）</label><div>'+D.tags.map(t=>'<button class="chip'+(my.includes(t)?' on':'')+'" data-a="tog" data-id="'+E(t)+'">#'+E(t)+'</button>').join('')+'<button class="chip mine" data-a="newtag">＋ 新しいタグ</button></div></div>';
+  return h+'<button class="btn" data-a="share1">共有・保存</button>'+(it.src==='own'?'<button class="link danger" data-a="del">この写真を消す</button>':'')+'</main>'}
+function scrTags(){return head('タグの整理',1)+'<main class="pb"><div class="card">'+(D.tags.length?D.tags.map(t=>'<div class="mrow"><span style="flex:1">#'+E(t)+'</span><button class="minicall" data-a="deltag" data-id="'+E(t)+'">消す</button></div>').join(''):'<p class="muted">タグはまだありません</p>')+'</div><button class="btn sub" data-a="newtag">＋ タグを追加</button><p class="muted">タグを消しても写真は消えません。</p></main>'}
 function years(){return[...new Set(items(V.dog).map(x=>(x.date||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse()}
-function pool(){return items(V.dog).filter(x=>M.per==='all'||(x.date||'').slice(0,4)===M.per).reverse()}
+function per(){return items(V.dog).filter(x=>M.per==='all'||(x.date||'').slice(0,4)===M.per).reverse()}
 function defTitle(){const n=dname(V.dog);if(M.kind==='xmas')return'Merry Christmas';if(M.kind==='ny')return'あけましておめでとう';if(M.kind==='grow')return n+'の成長アルバム';return n+'の'+(M.per==='all'?new Date().getFullYear():M.per)+'年'}
-function defSel(){const L=pool().filter(x=>x.label!=='ビフォー'),n=L.length;M.sel=[];if(!n)return;if(season()){M.sel=[L[n-1].key];return}const m=Math.min(9,n);for(let i=0;i<m;i++){const j=m===1?n-1:Math.round(i*(n-1)/(m-1));if(!M.sel.includes(L[j].key))M.sel.push(L[j].key)}}
-function scrMake(){const yrs=years(),P=pool(),opt=(o,v)=>Object.keys(o).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+E(Array.isArray(o[k])?o[k][0]:o[k])+'</option>').join('');
-  return head('画像を作る',1)+'<div class="xa-c"><canvas id="xacv"></canvas></div><div class="xa-c">'
-  +'<div class="xa-l">作るもの</div><select data-a="mset" data-k="kind">'+opt(KINDS,M.kind)+'</select>'
-  +'<div class="xa-l">期間</div><select data-a="mset" data-k="per"><option value="all">すべて</option>'+yrs.map(y=>'<option value="'+y+'"'+(y===M.per?' selected':'')+'>'+y+'年</option>').join('')+'</select>'
-  +'<div class="xa-l">形</div><select data-a="mset" data-k="shape">'+opt(SHAPES,M.shape)+'</select>'
-  +(season()?'':'<div class="xa-l">色</div><select data-a="mset" data-k="style">'+STYLES.map((s,i)=>'<option value="'+i+'"'+(i===M.style?' selected':'')+'>'+E(s.name||CN[i]||'色'+(i+1))+'</option>').join('')+'</select>')
-  +'<div class="xa-l">タイトル</div><input type="text" data-a="mtitle" value="'+E(M.title)+'"><p class="xa-s">空にするとタイトルなしになります。</p></div>'
-  +'<div class="xa-c"><div class="xa-l">使う写真（'+(season()?'1枚えらぶ':'9枚まで・日付の古い順に並びます')+'）</div>'
-  +(P.length?'<div class="xa-g">'+P.map(it=>{const on=M.sel.includes(it.key);return '<div class="xa-t'+(on?' on':'')+'" data-a="pick" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'"><span class="xa-tag">'+E(fmt(it.date))+(it.src==='rec'?' ✂':'')+'</span>'+(on?'<b class="xa-ck">✓</b>':'')+'</div>'}).join('')+'</div>':'<p class="xa-s">この期間の写真がありません。</p>')
-  +'</div><div class="xa-bar"><button class="xa-go" data-a="mshare">画像を共有・保存</button></div>'}
+function defSel(){let L=flt(per());if(V.flt==='all')L=L.filter(x=>x.label!=='ビフォー');const n=L.length;M.sel=[];if(!n)return;if(season()){M.sel=[L[n-1].key];return}
+  const m=Math.min(9,n);for(let i=0;i<m;i++){const j=m===1?n-1:Math.round(i*(n-1)/(m-1));if(!M.sel.includes(L[j].key))M.sel.push(L[j].key)}}
+function scrMake(){const yrs=years(),P=flt(per()),opt=(o,v)=>Object.keys(o).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+E(Array.isArray(o[k])?o[k][0]:o[k])+'</option>').join('');
+  return head('画像を作る',1)+'<main class="pb"><div class="card"><canvas id="xacv"></canvas></div><div class="card">'
+  +'<label>作るもの</label><select data-a="mset" data-k="kind">'+opt(KINDS,M.kind)+'</select>'
+  +'<label>期間</label><select data-a="mset" data-k="per"><option value="all">すべて</option>'+yrs.map(y=>'<option value="'+y+'"'+(y===M.per?' selected':'')+'>'+y+'年</option>').join('')+'</select>'
+  +'<label>形</label><select data-a="mset" data-k="shape">'+opt(SHAPES,M.shape)+'</select>'
+  +(season()?'':'<label>色</label><div class="sws">'+STYLES.map((s,i)=>'<button class="sw'+(i===M.style?' on':'')+'" data-a="color" data-id="'+i+'"><i style="background:'+s.bg+';border-color:'+s.label+'"></i>'+E(s.name||'')+'</button>').join('')+'</div>')
+  +'<label>タイトル</label><input type="text" data-a="mtitle" value="'+E(M.title)+'"><p class="muted">空にするとタイトルなしになります。</p></div>'
+  +'<div class="card"><label>使う写真（'+(season()?'1枚えらぶ':'9枚まで・日付の古い順に並びます')+'）</label>'+chips(false)
+  +(P.length?'<div class="xa-g">'+P.map(it=>{const on=M.sel.includes(it.key);return '<div class="xa-t'+(on?' on':'')+'" data-a="pick" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'"><span class="xa-lb">'+E(fmt(it.date))+'</span>'+(on?'<b class="xa-ck">✓</b>':'')+'</div>'}).join('')+'</div>':'<p class="muted">写真がありません</p>')
+  +'</div></main><div class="savebar"><button class="btn" data-a="mshare">画像を共有・保存</button></div>'}
 
 /* 描画 */
 function rr(c,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
@@ -689,7 +697,7 @@ function ny(c,W,H,ims){c.fillStyle='#fbf4e6';c.fillRect(0,0,W,H);c.fillStyle='rg
   txt(c,'今年もよろしくお願いします',W/2,fy+45,46,'#5a3b1e','',W-200);if(nm)txt(c,nm,W/2,fy+110,44,'#c8102e','bold',W-200);
   mark(c,W-70,tall?B+60:H-62,'#5a3b1e')}
 function subText(ims){if(M.kind==='grow'){if(ims.length<2)return'';const a=fmt(ims[0].it.date),b=fmt(ims[ims.length-1].it.date);return a&&b?a+' → '+b:''}
-  const n=(S.records||[]).filter(r=>r.dogId===V.dog&&(M.per==='all'||rdate(r).slice(0,4)===M.per)).length;return n?'トリミング '+n+'回':''}
+  const n=(S.records||[]).filter(r=>(r.dogId||r.dog)===V.dog&&(M.per==='all'||rdate(r).slice(0,4)===M.per)).length;return n?'トリミング '+n+'回':''}
 function album(c,W,H,ims){const st=STYLES[M.style]||STYLES[0];c.fillStyle=st.bg;c.fillRect(0,0,W,H);
   c.save();c.globalAlpha=.1;c.fillStyle=st.label;for(let i=0;i<14;i++)pawS(c,(i*397+80)%W,(i*613+150)%H,24);c.restore();
   const tall=H/W>1.6,T=tall?200:60,B=H-(tall?300:70);let y=T;
@@ -703,57 +711,61 @@ function album(c,W,H,ims){const st=STYLES[M.style]||STYLES[0];c.fillStyle=st.bg;
     photo(c,o.im,x,yy,cw,ch-lh,20);const d=fmt(o.it.date);if(d)txt(c,d,x+cw/2,yy+ch-lh/2+4,32,st.text,'bold',cw)});
   mark(c,W-60,B,st.text)}
 async function draw(){const my=++tok;const cv=root&&root.querySelector('#xacv');if(!cv)return;const[,W,H]=SHAPES[M.shape];
-  const ims=[];for(const it of pool().filter(x=>M.sel.includes(x.key)))ims.push({it,im:await imOf(it)});
+  const ims=[];for(const it of per().filter(x=>M.sel.includes(x.key)))ims.push({it,im:await imOf(it)});
   if(my!==tok||!root)return;cv.width=W;cv.height=H;const c=cv.getContext('2d');
   if(M.kind==='xmas')xmas(c,W,H,ims);else if(M.kind==='ny')ny(c,W,H,ims);else album(c,W,H,ims);
   M.file=null;cv.toBlob(b=>{if(my===tok&&b)M.file=new File([b],'trimlog-'+M.kind+'.jpg',{type:'image/jpeg'})},'image/jpeg',0.92)}
 
 /* 動き */
-function ui(){if(!root)return;const y=V.scr===root.dataset.s?root.scrollTop:0;root.dataset.s=V.scr;
-  root.innerHTML=V.scr==='dog'?scrDog():V.scr==='open'?scrOpen():V.scr==='make'?scrMake():scrTop();root.scrollTop=y;
+function ui(){if(!root)return;const y=root.dataset.s===V.scr?root.scrollTop:0;root.dataset.s=V.scr;
+  document.body.classList.toggle('xa-make',V.scr==='make');
+  root.innerHTML=({dog:scrDog,open:scrOpen,make:scrMake,tags:scrTags}[V.scr]||scrTop)();root.scrollTop=y;
   root.querySelectorAll('img[data-k]').forEach(async im=>{const it=KEYS[im.dataset.k];if(!it)return;const s=await srcOf(it);if(s)im.src=s});
   if(V.scr==='make')draw();if(V.scr==='open')prep1()}
 async function prep1(){V.file=null;const it=KEYS[V.key];if(!it)return;const s=await srcOf(it);if(!s)return;try{const b=await(await fetch(s)).blob();V.file=new File([b],'trimlog-photo.jpg',{type:b.type||'image/jpeg'})}catch(e){}}
 function marks(){root.querySelectorAll('.xa-t[data-a="pick"]').forEach(el=>{const on=M.sel.includes(el.dataset.id);el.classList.toggle('on',on);let b=el.querySelector('.xa-ck');if(on&&!b){b=document.createElement('b');b.className='xa-ck';b.textContent='✓';el.appendChild(b)}if(!on&&b)b.remove()})}
 function add(){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.style.display='none';document.body.appendChild(f);
-  f.onchange=async()=>{const fs=[...f.files];f.remove();if(!fs.length)return;let n=0;
+  f.onchange=async()=>{const fs=[...f.files];f.remove();if(!fs.length)return;let n=0;const tg=V.flt.indexOf('t:')===0?V.flt.slice(2):'';
     for(const file of fs){const s=await shrink(file);if(!s)continue;const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-      try{await aset('img_'+id,s)}catch(e){alert('保存できませんでした');break}LIST.push({id,dogId:V.dog,date:ymd(file.lastModified||Date.now()),memo:''});n++}
-    await saveList();if(n)msg(n+'枚追加しました');V.flt='all';ui()};f.click()}
-async function del(){const it=KEYS[V.key];if(!it||!it.a||!confirm('この写真を消しますか？'))return;LIST=LIST.filter(a=>a.id!==it.a.id);await saveList();try{await aset('img_'+it.a.id,undefined)}catch(e){}delete SRC[it.key];delete IMS[it.key];delete KEYS[it.key];V.scr='dog';ui()}
+      try{await aset('img_'+id,s)}catch(e){alert('保存できませんでした');break}D.list.push({id,dogId:V.dog,date:ymd(file.lastModified||Date.now()),memo:''});if(tg)D.tagOf['p'+id]=[tg];n++}
+    await saveD();if(n)msg(n+'枚追加しました');if(!tg)V.flt='all';ui()};f.click()}
+async function del(){const it=KEYS[V.key];if(!it||!it.a||!confirm('この写真を消しますか？'))return;D.list=D.list.filter(a=>a.id!==it.a.id);delete D.tagOf[it.key];await saveD();try{await aset('img_'+it.a.id,undefined)}catch(e){}delete SRC[it.key];delete IMS[it.key];delete KEYS[it.key];V.scr='dog';ui()}
+function newTag(){let t=prompt('タグの名前を入れてください（例：お散歩）');if(t==null)return;t=t.trim().replace(/^[#＃]+/,'');if(!t)return;
+  if(!D.tags.includes(t))D.tags.push(t);if(V.scr==='open'){const a=D.tagOf[V.key]=D.tagOf[V.key]||[];if(!a.includes(t))a.push(t)}saveD();ui()}
+function togTag(t){const a=D.tagOf[V.key]=tagsOf(V.key).slice(),i=a.indexOf(t);if(i>=0)a.splice(i,1);else a.push(t);if(!a.length)delete D.tagOf[V.key];saveD();ui()}
+function delTag(t){if(!confirm('「#'+t+'」を消しますか？（写真は消えません）'))return;D.tags=D.tags.filter(x=>x!==t);Object.keys(D.tagOf).forEach(k=>{D.tagOf[k]=D.tagOf[k].filter(x=>x!==t);if(!D.tagOf[k].length)delete D.tagOf[k]});if(V.flt==='t:'+t)V.flt='all';saveD();ui()}
 function make(){M.per='all';M.edited=false;M.title=defTitle();defSel();V.scr='make';ui()}
 function pick(k){if(season())M.sel=[k];else{const i=M.sel.indexOf(k);if(i>=0)M.sel.splice(i,1);else{if(M.sel.length>=9){msg('写真は9枚までです');return}M.sel.push(k)}}marks();draw()}
 function mshare(){if(!M.sel.length){msg('写真をえらんでください');return}
   const tags=(M.kind==='xmas'?'#クリスマス ':M.kind==='ny'?'#年賀状 #お正月 ':'#成長記録 ')+'#犬のいる暮らし '+(typeof APP_TAG!=='undefined'?APP_TAG:'#トリミングログ');
   try{navigator.clipboard.writeText(tags).catch(()=>{})}catch(e){}shareFile(M.file)}
+function close(){if(root)root.remove();root=null;document.body.classList.remove('xa-open','xa-make')}
 function onClick(e){const t=e.target.closest('[data-a]');if(!t||!root||!root.contains(t))return;const a=t.dataset.a,id=t.dataset.id;
-  if(a==='close'){root.remove();root=null;return}
   if(a==='back'){V.scr=V.scr==='dog'?'top':'dog';return ui()}
   if(a==='dog'){V.dog=id;V.flt='all';V.scr='dog';return ui()}
   if(a==='flt'){V.flt=id;return ui()}
   if(a==='open'){V.key=id;V.scr='open';return ui()}
+  if(a==='tags'){V.scr='tags';return ui()}
+  if(a==='color'){M.style=Number(id)||0;root.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on',b===t));return draw()}
   if(a==='add')return add();if(a==='make')return make();if(a==='pick')return pick(id);
+  if(a==='newtag')return newTag();if(a==='tog')return togTag(id);if(a==='deltag')return delTag(id);
   if(a==='share1')return shareFile(V.file);if(a==='del')return del();if(a==='mshare')return mshare()}
 function onChange(e){const t=e.target,a=t.dataset&&t.dataset.a;if(!a)return;
-  if(a==='date'||a==='memo'){const it=KEYS[V.key];if(!it||!it.a)return;it.a[a]=t.value;saveList();return}
-  if(a==='mset'){const k=t.dataset.k,v=t.value;if(k==='style'){M.style=Number(v)||0;return draw()}if(k==='shape'){M.shape=v;return draw()}
+  if(a==='date'||a==='memo'){const it=KEYS[V.key];if(!it||!it.a)return;it.a[a]=t.value;it[a]=t.value;saveD();return}
+  if(a==='mset'){const k=t.dataset.k,v=t.value;if(k==='shape'){M.shape=v;return draw()}
     M[k]=v;if(k==='kind'){M.edited=false;if(v==='year'&&M.per==='all'){const y=years()[0];if(y)M.per=y}}if(!M.edited)M.title=defTitle();defSel();ui()}}
 function onInput(e){const t=e.target;if(t.dataset&&t.dataset.a==='mtitle'){M.title=t.value;M.edited=true;clearTimeout(M.t);M.t=setTimeout(draw,150)}}
 async function openAlbum(){await ready;if(root)root.remove();root=document.createElement('div');root.id='xa';
   root.addEventListener('click',onClick);root.addEventListener('change',onChange);root.addEventListener('input',onInput);
-  document.body.appendChild(root);V.scr='top';ui()}
+  document.body.appendChild(root);document.body.classList.add('xa-open');V.scr='top';ui()}
 window.xOpenAlbum=openAlbum;
 
 /* 下のタブに「アルバム」を足す */
-function tab(){if(document.getElementById('xatab'))return;
-  const els=[...document.querySelectorAll('body *')].filter(e=>!e.closest('#xa')&&e.children.length<=2&&/設定$/.test(e.textContent.trim())&&e.textContent.trim().length<=6);
-  for(const e of els){let t=e;while(t.parentElement&&!/ホーム/.test(t.parentElement.textContent))t=t.parentElement;const bar=t.parentElement;if(!bar||bar===document.body)continue;
-    let fx=bar,ok=false;for(let i=0;i<4&&fx;i++,fx=fx.parentElement){const p=getComputedStyle(fx).position;if(p==='fixed'||p==='sticky'){ok=true;break}}if(!ok)continue;
-    const b=t.cloneNode(true);b.id='xatab';b.removeAttribute('onclick');b.removeAttribute('href');b.querySelectorAll('[onclick]').forEach(x=>x.removeAttribute('onclick'));
-    ['on','active','sel','cur','current'].forEach(c=>{b.classList.remove(c);b.querySelectorAll('.'+c).forEach(x=>x.classList.remove(c))});
-    const w=document.createTreeWalker(b,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())n.nodeValue=n.nodeValue.replace('設定','アルバム').replace(/⚙\uFE0F?/,'📷');
-    b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();openAlbum()},true);bar.insertBefore(b,t);return}}
-let tq=0;new MutationObserver(()=>{if(document.getElementById('xatab'))return;clearTimeout(tq);tq=setTimeout(()=>{try{tab()}catch(e){}},150)}).observe(document.body,{childList:true,subtree:true});
-setTimeout(()=>{try{tab()}catch(e){}},300);
+function tab(){const bar=document.querySelector('.tabbar');if(!bar||bar.querySelector('#xatab'))return;
+  const st=[...bar.querySelectorAll('button')].find(b=>b.textContent.trim()==='設定')||null;
+  const b=document.createElement('button');b.id='xatab';b.type='button';b.textContent='アルバム';
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openAlbum()});bar.insertBefore(b,st)}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.tabbar button');if(b&&b.id!=='xatab'&&root)close()},true);
+new MutationObserver(()=>{try{tab()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{tab()}catch(e){}
 })();
 /* ===== アルバムここまで ===== */
