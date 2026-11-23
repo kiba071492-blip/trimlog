@@ -2,6 +2,61 @@
 (function(){
 const TPL={chihuahua:'チワワ',simple:'シンプル'};
 const W0=1080,H0=1920,SAFE=[230,90,400,90];
+/* ===== 追加：写真を大きく・縦並び（4行目の下） ===== */
+const XSF=[200,50,290,50];
+let xDirKey='';
+paint=function(cv,c,p,makeSlots,getCrop){const st=STYLES[c.style]||STYLES[0],W=W0,H=H0,f=TS[c.ts][1];
+  if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;const ctx=cv.getContext('2d');
+  const A={x0:XSF[3],y0:XSF[0],x1:W-XSF[1],y1:H-XSF[2]};
+  const G=(c.tpl==='chihuahua'?layChi:laySimple)(ctx,c,p,st,W,H,f,A);
+  const slots=makeSlots(G);
+  for(const s of slots){
+    if(G.frame){ctx.save();ctx.shadowColor='rgba(0,0,0,.15)';ctx.shadowBlur=20;ctx.shadowOffsetY=6;ctx.fillStyle='#fff';rr(ctx,s.x-12,s.y-12,s.w+24,s.h+24,G.rad+10);ctx.fill();ctx.restore()}
+    const im=T.imgs[s.id],cr=getCrop(s);ctx.save();rr(ctx,s.x,s.y,s.w,s.h,G.rad);ctx.clip();ctx.fillStyle='#fff';ctx.fillRect(s.x,s.y,s.w,s.h);
+    if(im){const b=Math.max(s.w/im.naturalWidth,s.h/im.naturalHeight)*cr.z,dw=im.naturalWidth*b,dh=im.naturalHeight*b;ctx.drawImage(im,s.x+s.w/2-dw/2+cr.x,s.y+s.h/2-dh/2+cr.y,dw,dh)}
+    ctx.restore();
+    if(s.text)pill(ctx,s.text,s.x+20,s.y+20,st,f)}
+  G.foot();return slots};
+layChi=function(ctx,c,p,st,W,H,f,A){ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.globalAlpha=.12;for(let i=0;i<16;i++)paw(ctx,(i*397+80)%W,(i*613+150)%H,26,st.label,((i*53)%360)*Math.PI/180);ctx.restore();
+  const pad=24,L=A.x0+pad,R=A.x1-pad,hh=250,s=96,y0=A.y0;
+  if(p.title||p.sub){const cx=L+s*1.05,cy=y0+hh*0.58;chi(ctx,cx,cy,s);
+    const bx=cx+s*1.15,by=y0+hh*0.2,bw=R-bx,bh=hh*0.68;
+    ctx.fillStyle='rgba(255,255,255,.92)';rr(ctx,bx,by,bw,bh,36);ctx.fill();
+    ctx.beginPath();ctx.moveTo(bx+2,by+bh*0.45);ctx.lineTo(bx-30,by+bh*0.6);ctx.lineTo(bx+2,by+bh*0.72);ctx.closePath();ctx.fill();
+    ctx.fillStyle=isLight(st.text)?'#2b2b2b':st.text;ctx.textAlign='center';ctx.textBaseline='middle';const mx=bx+bw/2,mw=bw-50;
+    if(p.title&&p.sub){fit(ctx,p.title,mw,76*f,'bold');ctx.fillText(p.title,mx,by+bh*0.37);fit(ctx,p.sub,mw,44*f,'');ctx.fillText(p.sub,mx,by+bh*0.74)}
+    else{const t=p.title||p.sub;fit(ctx,t,mw,(p.title?76:52)*f,p.title?'bold':'');ctx.fillText(t,mx,by+bh/2)}
+  }else chi(ctx,(L+R)/2,y0+hh*0.55,s);
+  return{L:L+6,R:R-6,top:y0+hh+14,bottom:A.y1-100,gap:30,rad:22,frame:true,
+    foot:()=>{const fy=A.y1-50;chi(ctx,L+34,fy,30);for(let i=0;i<4;i++)paw(ctx,L+105+i*62,fy+(i%2?9:-9),16,st.label,0.3);bone(ctx,L+380,fy,62,st.label,-0.2);mark(ctx,st,R,fy)}}};
+laySimple=function(ctx,c,p,st,W,H,f,A){ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
+  const pad=24,L=A.x0+pad,R=A.x1-pad,cw=R-L,mx=(L+R)/2;let y=A.y0+pad;
+  ctx.fillStyle=st.text;ctx.textAlign='center';ctx.textBaseline='middle';
+  if(p.title){const fs=fit(ctx,p.title,cw,84*f,'bold');y+=fs*0.6;ctx.fillText(p.title,mx,y);y+=fs*0.7}
+  if(p.sub){const fs=fit(ctx,p.sub,cw,50*f,'');y+=fs*0.6;ctx.fillText(p.sub,mx,y);y+=fs*0.8}
+  if(p.title||p.sub)y+=20;
+  return{L,R,top:y,bottom:A.y1-80,gap:24,rad:24,frame:false,foot:()=>mark(ctx,st,R,A.y1-40)}};
+slotsFor=function(c,r,G){const h=G.bottom-G.top,w=G.R-G.L;
+  if(!isBoth(c,r))return[{k:r.after?'a':'b',id:r.after||r.before,x:G.L,y:G.top,w,h,lab:r.after?'A':'B'}];
+  if(c.dir==='v'){const hh=(h-G.gap)/2;return[{k:'b',id:r.before,x:G.L,y:G.top,w,h:hh,lab:'B'},{k:'a',id:r.after,x:G.L,y:G.top+hh+G.gap,w,h:hh,lab:'A'}]}
+  const ww=(w-G.gap)/2;return[{k:'b',id:r.before,x:G.L,y:G.top,w:ww,h,lab:'B'},{k:'a',id:r.after,x:G.L+ww+G.gap,y:G.top,w:ww,h,lab:'A'}]};
+crop=function(r,k,c){c=c||cfg();r.tpCrop=r.tpCrop||{};const key=ckey(c,r)+'|x2'+(c.dir==='v'?'v':'h');const o=r.tpCrop[key]=r.tpCrop[key]||{};
+  const id=k==='a'?r.after:k==='b'?r.before:null;
+  if(!o[k]||(id&&o[k].pid!==id))o[k]={z:1,x:0,y:0,pid:id};return o[k]};
+const xDraw0=draw;
+draw=function(){xDraw0();xDirUI()};
+window.xTpDir=d=>{const c=cfg();c.dir=d;save();xDirKey='';redraw()};
+function xDirUI(){const cv=document.getElementById('cmp');if(!cv)return;const r=recOf(T.id);if(!r)return;
+  const c=cfg(),both=isBoth(c,r),v=c.dir==='v',key=(both?1:0)+(v?'v':'h');
+  let b=document.getElementById('x_dir');
+  if(!b){b=document.createElement('div');b.id='x_dir';b.className='seg';b.style.margin='10px 0';xDirKey='';
+    const host=cv.closest('.card')||cv.parentNode;host.parentNode.insertBefore(b,host.nextSibling)}
+  if(key===xDirKey)return;xDirKey=key;
+  b.style.display=both?'':'none';
+  b.innerHTML=`<button class="${v?'':'on'}" onclick="xTpDir('h')">横に並べる</button><button class="${v?'on':''}" onclick="xTpDir('v')">縦に並べる</button>`}
+/* ===== 追加ここまで ===== */
+
 const TS={s:['小',0.8],m:['中',1],l:['大',1.25]};
 const MD={both:'ビフォー＋アフター',after:'アフターだけ'};
 const T={id:null,imgs:{},slots:[],blob:null,tok:0,bt:null,svt:null,raf:0,ptrs:new Map(),act:null,d0:0,z0:1};
