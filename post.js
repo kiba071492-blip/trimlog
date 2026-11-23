@@ -521,3 +521,28 @@ new MutationObserver(()=>{try{render()}catch(e){}}).observe(document.body,{child
 try{render()}catch(e){}
 })();
 /* ===== ホームにお店ここまで ===== */
+/* ===== 追加：お店のLINEが2つ出るのを直す ===== */
+(function(){const s=document.createElement('style');s.textContent='#xshops a.minicall[style*="margin-left"]{display:none!important}';document.head.appendChild(s)})();
+/* ===== LINE重複ここまで ===== */
+/* ===== 追加：電話・LINE・マップをそろえる ===== */
+(function(){
+const q=(s,r)=>[...(r||document).querySelectorAll(s)];
+const dg=s=>String(s||'').replace(/\D/g,'');
+const X=()=>(S.settings&&S.settings.shopX)||{};
+const mapUrl=a=>'https://maps.apple.com/?q='+encodeURIComponent(a);
+const st=document.createElement('style');st.textContent='#xshops a.minicall[style*="margin-left"]{display:none!important}';document.head.appendChild(st);
+function mk(href){const a=document.createElement('a');a.className='minicall xmap';a.textContent='マップ';a.href=href;a.onclick=e=>e.stopPropagation();return a}
+const hideOld=box=>q('a.minicall',box).forEach(a=>{if(a.textContent.trim()==='地図')a.style.display='none'});
+function fix(){
+  q('#xshops .card').forEach(c=>{const box=c.children[1];if(!box||box.querySelector('.xmap'))return;hideOld(box);
+    const n=((c.querySelector('div[style*="font-weight:bold"]')||{}).textContent||'').trim();if(!n)return;
+    const p=(S.places||[]).find(p=>p.name===n)||{},x=X()[n]||{};
+    box.appendChild(mk(mapUrl(x.addr||p.addr||n)))});
+  q('a.minicall[href^="tel:"]').forEach(t=>{if(t.closest('#xshops'))return;const par=t.parentElement;if(!par||par.querySelector('.xmap'))return;
+    const p=(S.places||[]).find(p=>p.tel&&dg(p.tel)===dg(t.getAttribute('href')));if(!p)return;hideOld(par);
+    const x=X()[p.name]||{};let last=t;q('a.minicall',par).forEach(a=>{if(a.textContent.trim()==='LINE')last=a});
+    const m=mk(mapUrl(x.addr||p.addr||p.name));m.style.marginLeft='6px';last.after(m)});
+}
+new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
+})();
+/* ===== 電話・LINE・マップここまで ===== */
