@@ -827,3 +827,30 @@ new MutationObserver(()=>{try{inject();fixEdit()}catch(e){}}).observe(document.b
     if(h.includes(LB)&&!h.includes('xpClr'))h=h.replace(LB,'<button class="link danger" onclick="xpClr()">タイトルとひとことを全部消す</button>'+LB);return h};V.xpost.__w=1;
   window.xpClr=()=>{const r=recOf(param);if(!r)return;const p=r.xp=r.xp||{};p.title='';p.sub='';save();render()}})();
 /* ===== アルバム2ここまで ===== */
+/* ===== 追加：お店はホームだけ・シンプルは文字なし ===== */
+(function(){
+/* お店欄はホームだけ */
+function shopFix(){const el=document.getElementById('xshops');if(!el)return;const on=view==='home';
+  el.style.display=on?'':'none';
+  const pv=el.previousElementSibling;if(pv&&pv.textContent.trim()==='お店')pv.style.display=on?'':'none';
+  const nx=el.nextElementSibling;if(nx&&nx.textContent.indexOf('お店を追加')>=0)nx.style.display=on?'':'none'}
+new MutationObserver(shopFix).observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
+shopFix();
+
+/* シンプルは文字なし */
+const cf=()=>(S.settings&&S.settings.xp)||{};
+const oV=V.xpost;
+V.xpost=function(id){const r=recOf(id);
+  if(r){const p=r.xp=r.xp||{},o=r.pt||{};
+    if(p.title==null)p.title=o.title||'';if(p.sub==null)p.sub=o.sub||'';
+    if(cf().tpl==='none'){if(p.title||p.sub){p.keepT=p.title;p.keepS=p.sub;p.title='';p.sub='';save()}}
+    else if(p.keepT!=null||p.keepS!=null){if(!p.title&&!p.sub){p.title=p.keepT||'';p.sub=p.keepS||''}delete p.keepT;delete p.keepS;save()}}
+  return oV.apply(this,arguments)};
+const oA=AFTER.xpost;
+AFTER.xpost=async function(id){
+  if(cf().tpl==='none'){const t=document.getElementById('xt_title')||document.getElementById('xt_sub');const card=t&&t.closest('.card');
+    if(card){for(const ch of [...card.children]){if(ch.classList.contains('xl')&&ch.textContent.trim()==='ラベル')break;ch.style.display='none'}
+      const n=document.createElement('p');n.className='muted';n.style.marginTop='0';n.textContent='シンプルでは、タイトルとひとことは入りません。';card.prepend(n)}}
+  return oA.apply(this,arguments)};
+})();
+/* ===== お店はホームだけ・シンプルは文字なしここまで ===== */
