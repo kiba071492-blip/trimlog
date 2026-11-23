@@ -933,41 +933,12 @@ document.addEventListener('click',e=>{if(!e.target.closest)return;
 new MutationObserver(()=>{try{injectRow()}catch(err){}}).observe(document.body,{childList:true,subtree:true});
 })();
 /* ===== お気に入りの表示項目・アルバムのお気に入りここまで ===== */
-/* ===== 追加まで ===== */
-：お気に入りはボタン1つだけ ===== */
-(function(){const s=document.createElement('style');
-s.textContent='#xfavrow .xfr-l,#xfavrow .chip:not([data-xf="*"]){display:none!important}#xfavrow [data-xf="*"]{font-size:0}#xfavrow [data-xf="*"]::before{content:"★ お気に入り";font-size:14px}';
-document.head.appendChild(s)})();
-/* ===== お気に入りはボタン1つだけここ
-/* ===== 追加：お気に入りの項目は設定から・アルバムから開く ===== */
+/* ===== 追加：ランキングを隠す ===== */
 (function(){
-const s=document.createElement('style');s.textContent='button[onclick="xFavPanel()"]{display:none!important}';document.head.appendChild(s);
-const FF=[['photo','お気に入りの写真'],['before','ビフォーの写真'],['memo','お願いした内容'],['dog','ワンちゃん'],['shop','お店'],['staff','担当者'],['menu','やったこと'],['date','来店日'],['price','金額'],['score','点数'],['cond','体調']];
-const DEF=['photo','memo','shop','staff','date'];
-const st=()=>{S.settings=S.settings||{};if(!Array.isArray(S.settings.favShow))S.settings.favShow=DEF.slice();return S.settings.favShow};
-
-/* 設定の中の画面 */
-V.xfavset=()=>{const on=st();
-  return shell('お気に入りに表示する項目',`<p class="muted">チェックした項目だけが、お気に入りの画面に出ます。</p><div class="card">${FF.map(([k,l])=>`<label class="chk" style="margin:12px 0"><input type="checkbox" ${on.includes(k)?'checked':''} onchange="xFavTog('${k}',this.checked)">${l}</label>`).join('')}</div>`,{back:1})};
-function addRow(){if(document.getElementById('xfavset'))return;
-  const h=document.querySelector('header h1');if(!h||h.textContent.trim()!=='設定')return;
-  const m=document.querySelector('main');if(!m)return;
-  const c=document.createElement('div');c.id='xfavset';c.className='card';c.style.padding='0 14px';
-  c.innerHTML=menuRow('お気に入りに表示する項目','',"go('xfavset')");
-  const rows=[...m.querySelectorAll('.mrow')];const dr=rows.find(r=>r.textContent.indexOf('ワンちゃん')>=0);const card=dr&&dr.closest('.card');
-  if(card)card.after(c);else m.prepend(c)}
-new MutationObserver(()=>{try{addRow()}catch(e){}}).observe(document.body,{childList:true,subtree:true});
-
-/* アルバムのお気に入りから開く */
-const pick=(o,ks)=>{if(!o)return'';for(const k of ks){if(o[k])return o[k]}return''};
-function srcRec(f){const id=pick(f,['rec','recId','fromRec','rid']);let r=id?recOf(id):null;
-  if(!r&&f.img)r=S.records.find(x=>x.after===f.img||x.before===f.img)||null;return r}
-window.addEventListener('click',e=>{if(!e.target.closest)return;
-  const t=e.target.closest('#xrec .xa-t[data-id]');if(!t)return;
-  if(!document.querySelector('#xfavrow [data-xf="*"].on'))return;
-  const m=/^r(.+)([ab])$/.exec(t.dataset.id);if(!m)return;
-  const f=(S.favs||[]).find(x=>{const r=srcRec(x);return r&&r.id===m[1]});if(!f)return;
-  e.preventDefault();e.stopPropagation();go('fav',f.id)},true);
+function hide(){
+  document.querySelectorAll('.mrow,.tabbar button,.sec').forEach(el=>{if(el.textContent.indexOf('ランキング')>=0&&el.style.display!=='none')el.style.display='none'});
+  document.querySelectorAll('main .card').forEach(c=>{const rows=c.querySelectorAll('.mrow');if(rows.length&&[...rows].every(r=>r.style.display==='none')&&c.style.display!=='none')c.style.display='none'})}
+new MutationObserver(()=>{try{hide()}catch(e){}}).observe(document.body,{childList:true,subtree:true});
+try{hide()}catch(e){}
 })();
-/* ===== お気に入りの項目は設定から・アルバムから開くここまで ===== */
-https://github.com/kiba071492-blip/trimlog/edit/main/index.html
+/* ===== ランキングを隠すここまで ===== */
