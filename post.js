@@ -578,3 +578,182 @@ function fix(){
 new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
 })();
 /* ===== ボタン下の段ここまで ===== */
+/* ===== 追加：アルバム ===== */
+(function(){
+const FN='"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif';
+const KINDS={xmas:'クリスマス',ny:'お正月',grow:'成長アルバム',year:'1年まとめ'};
+const SHAPES={reel:['縦長（9:16）',1080,1920],feed:['少し縦長（4:5）',1080,1350],sq:['正方形',1080,1080]};
+const CN=['ピンク','ダーク','ミント','ベージュ','スカイ','モノクロ'];
+const V={scr:'top',dog:'',flt:'all',key:'',file:null};
+const M={kind:'xmas',per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],file:null,t:0};
+const SRC={},IMS={},KEYS={};let root=null,tok=0,LIST=[];
+
+/* 普段の写真の保存場所 */
+let dbp=null;
+const adb=()=>dbp=dbp||new Promise((res,rej)=>{const q=indexedDB.open('trimlog_album',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
+async function aget(k){const d=await adb();return new Promise(res=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)})}
+async function aset(k,v){const d=await adb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite'),s=t.objectStore('kv');if(v===undefined)s.delete(k);else s.put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+const ready=aget('list').then(v=>{if(Array.isArray(v))LIST=v}).catch(()=>{});
+const saveList=()=>aset('list',LIST).catch(()=>alert('保存できませんでした'));
+
+const css=document.createElement('style');
+css.textContent='#xa{position:fixed;inset:0;z-index:9999;background:#f7f7f7;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 110px);font-family:'+FN+';color:#333;box-sizing:border-box}#xa .xa-h{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}#xa .xa-h b{font-size:17px}#xa .xa-b{border:none;background:#e9e9e9;border-radius:10px;padding:8px 12px;font-size:15px;color:#333;width:auto;margin:0}#xa .xa-row{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px;margin-bottom:10px}#xa .xa-av{width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fde8ee;display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}#xa .xa-av img{width:100%;height:100%;object-fit:cover}#xa .xa-s{font-size:12px;color:#888}#xa .xa-btns{display:flex;gap:8px;margin-bottom:12px}#xa .xa-btns button{flex:1;width:auto;margin:0}#xa .xa-go{border:none;border-radius:12px;background:#e8758f;color:#fff;font-size:16px;font-weight:bold;padding:13px}#xa .xa-go2{border:2px solid #e8758f;border-radius:12px;background:#fff;color:#e8758f;font-size:16px;font-weight:bold;padding:11px}#xa .xa-chips{display:flex;gap:6px;margin-bottom:4px}#xa .xa-chip{border:1px solid #ddd;background:#fff;border-radius:20px;padding:6px 14px;font-size:14px;color:#555;width:auto;margin:0}#xa .xa-chip.on{background:#e8758f;border-color:#e8758f;color:#fff}#xa .xa-m{font-size:14px;font-weight:bold;margin:16px 0 8px}#xa .xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}#xa .xa-t{position:relative;aspect-ratio:1/1;background:#eee;border-radius:6px;overflow:hidden}#xa .xa-t img{width:100%;height:100%;object-fit:cover;display:block}#xa .xa-t.on{outline:4px solid #e8758f;outline-offset:-4px}#xa .xa-tag{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 5px}#xa .xa-ck{position:absolute;top:4px;right:4px;background:#e8758f;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xa .xa-c{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px}#xa .xa-l{font-size:13px;color:#888;margin:12px 0 6px}#xa .xa-l:first-child{margin-top:0}#xa select,#xa input{width:100%;font-size:16px;padding:10px;border-radius:10px;border:1px solid #ddd;background:#fff;box-sizing:border-box;color:#333}#xa .xa-del{width:100%;margin-top:10px;border:none;background:none;color:#d33;font-size:15px;padding:12px}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}#xa .xa-bar{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(env(safe-area-inset-bottom) + 10px);background:rgba(255,255,255,.97);box-shadow:0 -1px 6px rgba(0,0,0,.08)}#xa .xa-bar .xa-go{width:100%}';
+document.head.appendChild(css);
+
+/* 共通 */
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const msg=m=>{try{if(typeof toast==='function'){toast(m);return}}catch(e){}alert(m)};
+const dogs=()=>S.dogs||[];
+const dogOf=id=>dogs().find(d=>d.id===id)||{};
+const dname=id=>dogOf(id).name||'';
+const hid=d=>!!(d.hidden||d.hide||d.off);
+const ymd=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function rdate(r){const v=r.date||r.visit||r.visitAt||r.at||r.when||r.dt||r.day||'';return typeof v==='number'?ymd(v):String(v).slice(0,10)}
+const fmt=d=>{const m=String(d||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?m[1]+'.'+m[2].padStart(2,'0')+'.'+m[3].padStart(2,'0'):''};
+function shopName(r){const id=r.placeId||r.shopId||r.place||r.shop;const p=(S.places||[]).find(x=>x.id===id);return p?(p.name||''):''}
+const season=()=>M.kind==='xmas'||M.kind==='ny';
+
+function items(dogId){const out=[];
+  (S.records||[]).filter(r=>r.dogId===dogId).forEach(r=>{const d=rdate(r),sh=shopName(r);
+    if(r.before)out.push({key:'r'+r.id+'b',src:'rec',img:r.before,date:d,label:'ビフォー',shop:sh});
+    if(r.after)out.push({key:'r'+r.id+'a',src:'rec',img:r.after,date:d,label:'アフター',shop:sh})});
+  LIST.filter(a=>a.dogId===dogId).forEach(a=>out.push({key:'p'+a.id,src:'own',img:a.id,date:a.date||'',label:'',memo:a.memo||'',a}));
+  out.forEach(it=>KEYS[it.key]=it);
+  return out.sort((x,y)=>x.date<y.date?1:x.date>y.date?-1:(x.label==='ビフォー'?1:-1))}
+async function srcOf(it){if(SRC[it.key])return SRC[it.key];let s=null;try{s=it.src==='rec'?await getImg(it.img):await aget('img_'+it.img)}catch(e){}if(s&&typeof s!=='string')s=URL.createObjectURL(s);if(s)SRC[it.key]=s;return s}
+async function imOf(it){if(IMS[it.key])return IMS[it.key];const s=await srcOf(it);if(!s)return null;const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});if(im)IMS[it.key]=im;return im}
+function shrink(file){return new Promise(res=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{const k=Math.min(1,1600/Math.max(i.naturalWidth,i.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.85))};i.onerror=()=>{URL.revokeObjectURL(u);res(null)};i.src=u})}
+function shareFile(f){if(!f){msg('準備中です。もう一度押してください');return}if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f]}).catch(()=>{});else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}
+
+/* 画面 */
+function head(t,back){return '<div class="xa-h"><button class="xa-b" data-a="'+(back?'back':'close')+'">'+(back?'‹ 戻る':'閉じる')+'</button><b>'+E(t)+'</b><span style="width:64px"></span></div>'}
+function scrTop(){const ds=dogs().slice().sort((a,b)=>hid(a)-hid(b));
+  return head('アルバム',0)+(ds.length?ds.map(d=>{const L=items(d.id),c=L.find(x=>x.label==='アフター')||L[0];
+    return '<div class="xa-row" data-a="dog" data-id="'+E(d.id)+'"><div class="xa-av">'+(c?'<img data-k="'+E(c.key)+'">':'🐶')+'</div><div style="flex:1;min-width:0"><b>'+E(d.name||'名前なし')+'</b>'+(hid(d)?' <span class="xa-s">（非表示中）</span>':'')+'<div class="xa-s">写真 '+L.length+'枚</div></div><span class="xa-s" style="font-size:22px">›</span></div>'}).join(''):'<p class="xa-s">先にワンちゃんを登録してください。</p>')}
+function scrDog(){let L=items(V.dog);if(V.flt==='rec')L=L.filter(x=>x.src==='rec');if(V.flt==='own')L=L.filter(x=>x.src==='own');
+  const chip=(k,t)=>'<button class="xa-chip'+(V.flt===k?' on':'')+'" data-a="flt" data-id="'+k+'">'+t+'</button>';
+  let h=head(dname(V.dog)+'のアルバム',1)+'<div class="xa-btns"><button class="xa-go2" data-a="add">＋ 写真を追加</button><button class="xa-go" data-a="make">🎄 画像を作る</button></div><div class="xa-chips">'+chip('all','すべて')+chip('rec','トリミング')+chip('own','普段の写真')+'</div>';
+  if(!L.length)return h+'<p class="xa-s" style="text-align:center;margin-top:30px">まだ写真がありません。<br>「＋ 写真を追加」から入れられます。</p>';
+  let cur=null;L.forEach(it=>{const m=(it.date||'').slice(0,7);if(m!==cur){if(cur!==null)h+='</div>';cur=m;const mm=m.match(/^(\d{4})-(\d{2})/);h+='<div class="xa-m">'+(mm?mm[1]+'年'+Number(mm[2])+'月':'日付なし')+'</div><div class="xa-g">'}
+    h+='<div class="xa-t" data-a="open" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'">'+(it.src==='rec'?'<span class="xa-tag">✂ '+(it.label==='ビフォー'?'ビフォー':'アフター')+'</span>':'')+'</div>'});
+  return h+'</div>'}
+function scrOpen(){const it=KEYS[V.key];if(!it){V.scr='dog';return scrDog()}
+  let h=head(fmt(it.date)||'写真',1)+'<div class="xa-c"><img data-k="'+E(it.key)+'" style="width:100%;border-radius:10px;display:block"></div><div class="xa-c">';
+  if(it.src==='rec')h+='<div>✂ トリミング（'+it.label+'）</div>'+(it.shop?'<div class="xa-s" style="margin-top:4px">'+E(it.shop)+'</div>':'')+'<p class="xa-s">日付などはトリミングの記録から変えられます。</p>';
+  else h+='<div class="xa-l">日付</div><input type="date" data-a="date" value="'+E(it.date)+'"><div class="xa-l">メモ</div><input type="text" data-a="memo" value="'+E(it.memo)+'" placeholder="お散歩、誕生日など">';
+  return h+'</div><button class="xa-go" style="width:100%" data-a="share1">共有・保存</button>'+(it.src==='own'?'<button class="xa-del" data-a="del">この写真を消す</button>':'')}
+function years(){return[...new Set(items(V.dog).map(x=>(x.date||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse()}
+function pool(){return items(V.dog).filter(x=>M.per==='all'||(x.date||'').slice(0,4)===M.per).reverse()}
+function defTitle(){const n=dname(V.dog);if(M.kind==='xmas')return'Merry Christmas';if(M.kind==='ny')return'あけましておめでとう';if(M.kind==='grow')return n+'の成長アルバム';return n+'の'+(M.per==='all'?new Date().getFullYear():M.per)+'年'}
+function defSel(){const L=pool().filter(x=>x.label!=='ビフォー'),n=L.length;M.sel=[];if(!n)return;if(season()){M.sel=[L[n-1].key];return}const m=Math.min(9,n);for(let i=0;i<m;i++){const j=m===1?n-1:Math.round(i*(n-1)/(m-1));if(!M.sel.includes(L[j].key))M.sel.push(L[j].key)}}
+function scrMake(){const yrs=years(),P=pool(),opt=(o,v)=>Object.keys(o).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+E(Array.isArray(o[k])?o[k][0]:o[k])+'</option>').join('');
+  return head('画像を作る',1)+'<div class="xa-c"><canvas id="xacv"></canvas></div><div class="xa-c">'
+  +'<div class="xa-l">作るもの</div><select data-a="mset" data-k="kind">'+opt(KINDS,M.kind)+'</select>'
+  +'<div class="xa-l">期間</div><select data-a="mset" data-k="per"><option value="all">すべて</option>'+yrs.map(y=>'<option value="'+y+'"'+(y===M.per?' selected':'')+'>'+y+'年</option>').join('')+'</select>'
+  +'<div class="xa-l">形</div><select data-a="mset" data-k="shape">'+opt(SHAPES,M.shape)+'</select>'
+  +(season()?'':'<div class="xa-l">色</div><select data-a="mset" data-k="style">'+STYLES.map((s,i)=>'<option value="'+i+'"'+(i===M.style?' selected':'')+'>'+E(s.name||CN[i]||'色'+(i+1))+'</option>').join('')+'</select>')
+  +'<div class="xa-l">タイトル</div><input type="text" data-a="mtitle" value="'+E(M.title)+'"><p class="xa-s">空にするとタイトルなしになります。</p></div>'
+  +'<div class="xa-c"><div class="xa-l">使う写真（'+(season()?'1枚えらぶ':'9枚まで・日付の古い順に並びます')+'）</div>'
+  +(P.length?'<div class="xa-g">'+P.map(it=>{const on=M.sel.includes(it.key);return '<div class="xa-t'+(on?' on':'')+'" data-a="pick" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'"><span class="xa-tag">'+E(fmt(it.date))+(it.src==='rec'?' ✂':'')+'</span>'+(on?'<b class="xa-ck">✓</b>':'')+'</div>'}).join('')+'</div>':'<p class="xa-s">この期間の写真がありません。</p>')
+  +'</div><div class="xa-bar"><button class="xa-go" data-a="mshare">画像を共有・保存</button></div>'}
+
+/* 描画 */
+function rr(c,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function photo(c,im,x,y,w,h,r){c.save();rr(c,x,y,w,h,r);c.clip();if(im){const s=Math.max(w/im.naturalWidth,h/im.naturalHeight),dw=im.naturalWidth*s,dh=im.naturalHeight*s;c.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}else{c.fillStyle='#ddd';c.fillRect(x,y,w,h)}c.restore()}
+function txt(c,t,x,y,size,col,w,maxW){let s=Math.round(size);for(;;){c.font=(w?w+' ':'')+s+'px '+FN;if(c.measureText(t).width<=maxW||s<=20)break;s-=2}c.fillStyle=col;c.textAlign='center';c.textBaseline='middle';c.fillText(t,x,y)}
+function mark(c,x,y,col){c.save();c.globalAlpha=.7;c.font='bold 28px '+FN;c.fillStyle=col;c.textAlign='right';c.textBaseline='bottom';c.fillText(typeof APP_NAME!=='undefined'?APP_NAME:'トリミングログ',x,y);c.restore()}
+function holly(c,x,y){c.save();c.translate(x,y);c.fillStyle='#2e8b57';[-0.7,0.7].forEach(a=>{c.save();c.rotate(a);c.beginPath();c.ellipse(0,-34,17,36,0,0,7);c.fill();c.restore()});c.fillStyle='#e74c3c';[[-12,4],[12,4],[0,-10]].forEach(([dx,dy])=>{c.beginPath();c.arc(dx,dy,13,0,7);c.fill()});c.restore()}
+function plum(c,x,y,r){c.save();c.translate(x,y);c.fillStyle='#e8758f';for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2;c.beginPath();c.arc(Math.cos(a)*r*0.6,Math.sin(a)*r*0.6,r*0.5,0,7);c.fill()}c.fillStyle='#f6d77a';c.beginPath();c.arc(0,0,r*0.3,0,7);c.fill();c.restore()}
+function pawS(c,x,y,r){c.beginPath();c.ellipse(x,y+r*0.35,r*0.6,r*0.5,0,0,7);c.fill();[[-0.6,-0.3],[-0.2,-0.68],[0.2,-0.68],[0.6,-0.3]].forEach(([dx,dy])=>{c.beginPath();c.arc(x+dx*r,y+dy*r,r*0.22,0,7);c.fill()})}
+function box(W,y,bottom,ratio,side){const maxW=W-side*2,maxH=bottom-y;let pw=maxW,ph=pw*ratio;if(ph>maxH){ph=maxH;pw=Math.min(maxW,ph/ratio)}return{px:(W-pw)/2,py:y+(maxH-ph)/2,pw,ph}}
+function nyYear(){const d=new Date();return d.getMonth()>=9?d.getFullYear()+1:d.getFullYear()}
+function xmas(c,W,H,ims){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1b5e40');g.addColorStop(1,'#0d3324');c.fillStyle=g;c.fillRect(0,0,W,H);
+  for(let i=0;i<80;i++){c.globalAlpha=.2+(i*13%60)/100;c.fillStyle='#fff';c.beginPath();c.arc((i*389+57)%W,(i*631+91)%H,3+(i*7)%8,0,7);c.fill()}c.globalAlpha=1;
+  const tall=H/W>1.6,T=tall?210:60,B=H-(tall?300:60);let y=T;
+  if(M.title){txt(c,M.title,W/2,y+55,100,'#f3d27a','bold',W-140);y+=125}
+  const cols=['#e74c3c','#f1c40f','#3498db','#ecf0f1','#e67e22'],x0=60,x1=W-60,ly=y+5;
+  c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=3;c.beginPath();c.moveTo(x0,ly);c.quadraticCurveTo(W/2,ly+60,x1,ly);c.stroke();
+  for(let i=0;i<=12;i++){const t=i/12,x=(1-t)*(1-t)*x0+2*(1-t)*t*W/2+t*t*x1,yy=(1-t)*(1-t)*ly+2*(1-t)*t*(ly+60)+t*t*ly;c.fillStyle=cols[i%5];c.beginPath();c.ellipse(x,yy+14,9,14,0,0,7);c.fill()}
+  y+=90;const nm=dname(V.dog),fy=B-(nm?110:50);const{px,py,pw,ph}=box(W,y,fy-20,1.25,100);
+  c.fillStyle='#c0392b';rr(c,px-22,py-22,pw+44,ph+44,34);c.fill();c.fillStyle='#fff';rr(c,px-8,py-8,pw+16,ph+16,24);c.fill();
+  photo(c,(ims[0]||{}).im,px,py,pw,ph,18);holly(c,px-6,py-6);holly(c,px+pw+6,py+ph+6);
+  if(nm)txt(c,'from '+nm,W/2,fy+40,56,'#fff','bold',W-160);mark(c,W-50,B,'#fff')}
+function ny(c,W,H,ims){c.fillStyle='#fbf4e6';c.fillRect(0,0,W,H);c.fillStyle='rgba(200,16,46,.08)';c.beginPath();c.arc(W*0.82,H*0.12,W*0.3,0,7);c.fill();
+  c.strokeStyle='#c8102e';c.lineWidth=12;c.strokeRect(28,28,W-56,H-56);c.strokeStyle='#c9a227';c.lineWidth=3;c.strokeRect(50,50,W-100,H-100);
+  const tall=H/W>1.6,T=tall?210:90,B=H-(tall?300:90);let y=T;
+  if(M.title){txt(c,M.title,W/2,y+50,92,'#c8102e','bold',W-200);y+=105}
+  txt(c,String(nyYear()),W/2,y+30,60,'#b8901a','bold',W-200);y+=85;
+  const nm=dname(V.dog),fy=B-(nm?150:90);const{px,py,pw,ph}=box(W,y,fy-10,1.25,130);
+  c.fillStyle='#c9a227';rr(c,px-14,py-14,pw+28,ph+28,28);c.fill();photo(c,(ims[0]||{}).im,px,py,pw,ph,18);
+  plum(c,px-4,py-4,34);plum(c,px+pw+4,py+ph+4,34);plum(c,px+pw-30,py-14,22);
+  txt(c,'今年もよろしくお願いします',W/2,fy+45,46,'#5a3b1e','',W-200);if(nm)txt(c,nm,W/2,fy+110,44,'#c8102e','bold',W-200);
+  mark(c,W-70,tall?B+60:H-62,'#5a3b1e')}
+function subText(ims){if(M.kind==='grow'){if(ims.length<2)return'';const a=fmt(ims[0].it.date),b=fmt(ims[ims.length-1].it.date);return a&&b?a+' → '+b:''}
+  const n=(S.records||[]).filter(r=>r.dogId===V.dog&&(M.per==='all'||rdate(r).slice(0,4)===M.per)).length;return n?'トリミング '+n+'回':''}
+function album(c,W,H,ims){const st=STYLES[M.style]||STYLES[0];c.fillStyle=st.bg;c.fillRect(0,0,W,H);
+  c.save();c.globalAlpha=.1;c.fillStyle=st.label;for(let i=0;i<14;i++)pawS(c,(i*397+80)%W,(i*613+150)%H,24);c.restore();
+  const tall=H/W>1.6,T=tall?200:60,B=H-(tall?300:70);let y=T;
+  if(M.title){txt(c,M.title,W/2,y+50,84,st.text,'bold',W-120);y+=100}
+  const sub=subText(ims);if(sub){txt(c,sub,W/2,y+20,44,st.text,'',W-120);y+=65}
+  y+=10;const n=ims.length,bottom=B-50;
+  if(!n){txt(c,'写真をえらんでください',W/2,(y+bottom)/2,44,st.text,'',W-120);mark(c,W-60,B,st.text);return}
+  let cols=n===1?1:n<=4?2:3;if(tall&&n<=3)cols=1;
+  const rows=Math.ceil(n/cols),gap=24,lh=50,L=60,R=W-60,cw=(R-L-gap*(cols-1))/cols,ch=(bottom-y-gap*(rows-1))/rows;
+  ims.forEach((o,i)=>{const row=Math.floor(i/cols),col=i%cols,inRow=Math.min(cols,n-row*cols);let x=L+col*(cw+gap);if(inRow<cols)x+=(cols-inRow)*(cw+gap)/2;const yy=y+row*(ch+gap);
+    photo(c,o.im,x,yy,cw,ch-lh,20);const d=fmt(o.it.date);if(d)txt(c,d,x+cw/2,yy+ch-lh/2+4,32,st.text,'bold',cw)});
+  mark(c,W-60,B,st.text)}
+async function draw(){const my=++tok;const cv=root&&root.querySelector('#xacv');if(!cv)return;const[,W,H]=SHAPES[M.shape];
+  const ims=[];for(const it of pool().filter(x=>M.sel.includes(x.key)))ims.push({it,im:await imOf(it)});
+  if(my!==tok||!root)return;cv.width=W;cv.height=H;const c=cv.getContext('2d');
+  if(M.kind==='xmas')xmas(c,W,H,ims);else if(M.kind==='ny')ny(c,W,H,ims);else album(c,W,H,ims);
+  M.file=null;cv.toBlob(b=>{if(my===tok&&b)M.file=new File([b],'trimlog-'+M.kind+'.jpg',{type:'image/jpeg'})},'image/jpeg',0.92)}
+
+/* 動き */
+function ui(){if(!root)return;const y=V.scr===root.dataset.s?root.scrollTop:0;root.dataset.s=V.scr;
+  root.innerHTML=V.scr==='dog'?scrDog():V.scr==='open'?scrOpen():V.scr==='make'?scrMake():scrTop();root.scrollTop=y;
+  root.querySelectorAll('img[data-k]').forEach(async im=>{const it=KEYS[im.dataset.k];if(!it)return;const s=await srcOf(it);if(s)im.src=s});
+  if(V.scr==='make')draw();if(V.scr==='open')prep1()}
+async function prep1(){V.file=null;const it=KEYS[V.key];if(!it)return;const s=await srcOf(it);if(!s)return;try{const b=await(await fetch(s)).blob();V.file=new File([b],'trimlog-photo.jpg',{type:b.type||'image/jpeg'})}catch(e){}}
+function marks(){root.querySelectorAll('.xa-t[data-a="pick"]').forEach(el=>{const on=M.sel.includes(el.dataset.id);el.classList.toggle('on',on);let b=el.querySelector('.xa-ck');if(on&&!b){b=document.createElement('b');b.className='xa-ck';b.textContent='✓';el.appendChild(b)}if(!on&&b)b.remove()})}
+function add(){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.style.display='none';document.body.appendChild(f);
+  f.onchange=async()=>{const fs=[...f.files];f.remove();if(!fs.length)return;let n=0;
+    for(const file of fs){const s=await shrink(file);if(!s)continue;const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      try{await aset('img_'+id,s)}catch(e){alert('保存できませんでした');break}LIST.push({id,dogId:V.dog,date:ymd(file.lastModified||Date.now()),memo:''});n++}
+    await saveList();if(n)msg(n+'枚追加しました');V.flt='all';ui()};f.click()}
+async function del(){const it=KEYS[V.key];if(!it||!it.a||!confirm('この写真を消しますか？'))return;LIST=LIST.filter(a=>a.id!==it.a.id);await saveList();try{await aset('img_'+it.a.id,undefined)}catch(e){}delete SRC[it.key];delete IMS[it.key];delete KEYS[it.key];V.scr='dog';ui()}
+function make(){M.per='all';M.edited=false;M.title=defTitle();defSel();V.scr='make';ui()}
+function pick(k){if(season())M.sel=[k];else{const i=M.sel.indexOf(k);if(i>=0)M.sel.splice(i,1);else{if(M.sel.length>=9){msg('写真は9枚までです');return}M.sel.push(k)}}marks();draw()}
+function mshare(){if(!M.sel.length){msg('写真をえらんでください');return}
+  const tags=(M.kind==='xmas'?'#クリスマス ':M.kind==='ny'?'#年賀状 #お正月 ':'#成長記録 ')+'#犬のいる暮らし '+(typeof APP_TAG!=='undefined'?APP_TAG:'#トリミングログ');
+  try{navigator.clipboard.writeText(tags).catch(()=>{})}catch(e){}shareFile(M.file)}
+function onClick(e){const t=e.target.closest('[data-a]');if(!t||!root||!root.contains(t))return;const a=t.dataset.a,id=t.dataset.id;
+  if(a==='close'){root.remove();root=null;return}
+  if(a==='back'){V.scr=V.scr==='dog'?'top':'dog';return ui()}
+  if(a==='dog'){V.dog=id;V.flt='all';V.scr='dog';return ui()}
+  if(a==='flt'){V.flt=id;return ui()}
+  if(a==='open'){V.key=id;V.scr='open';return ui()}
+  if(a==='add')return add();if(a==='make')return make();if(a==='pick')return pick(id);
+  if(a==='share1')return shareFile(V.file);if(a==='del')return del();if(a==='mshare')return mshare()}
+function onChange(e){const t=e.target,a=t.dataset&&t.dataset.a;if(!a)return;
+  if(a==='date'||a==='memo'){const it=KEYS[V.key];if(!it||!it.a)return;it.a[a]=t.value;saveList();return}
+  if(a==='mset'){const k=t.dataset.k,v=t.value;if(k==='style'){M.style=Number(v)||0;return draw()}if(k==='shape'){M.shape=v;return draw()}
+    M[k]=v;if(k==='kind'){M.edited=false;if(v==='year'&&M.per==='all'){const y=years()[0];if(y)M.per=y}}if(!M.edited)M.title=defTitle();defSel();ui()}}
+function onInput(e){const t=e.target;if(t.dataset&&t.dataset.a==='mtitle'){M.title=t.value;M.edited=true;clearTimeout(M.t);M.t=setTimeout(draw,150)}}
+async function openAlbum(){await ready;if(root)root.remove();root=document.createElement('div');root.id='xa';
+  root.addEventListener('click',onClick);root.addEventListener('change',onChange);root.addEventListener('input',onInput);
+  document.body.appendChild(root);V.scr='top';ui()}
+window.xOpenAlbum=openAlbum;
+
+/* 下のタブに「アルバム」を足す */
+function tab(){if(document.getElementById('xatab'))return;
+  const els=[...document.querySelectorAll('body *')].filter(e=>!e.closest('#xa')&&e.children.length<=2&&/設定$/.test(e.textContent.trim())&&e.textContent.trim().length<=6);
+  for(const e of els){let t=e;while(t.parentElement&&!/ホーム/.test(t.parentElement.textContent))t=t.parentElement;const bar=t.parentElement;if(!bar||bar===document.body)continue;
+    let fx=bar,ok=false;for(let i=0;i<4&&fx;i++,fx=fx.parentElement){const p=getComputedStyle(fx).position;if(p==='fixed'||p==='sticky'){ok=true;break}}if(!ok)continue;
+    const b=t.cloneNode(true);b.id='xatab';b.removeAttribute('onclick');b.removeAttribute('href');b.querySelectorAll('[onclick]').forEach(x=>x.removeAttribute('onclick'));
+    ['on','active','sel','cur','current'].forEach(c=>{b.classList.remove(c);b.querySelectorAll('.'+c).forEach(x=>x.classList.remove(c))});
+    const w=document.createTreeWalker(b,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())n.nodeValue=n.nodeValue.replace('設定','アルバム').replace(/⚙\uFE0F?/,'📷');
+    b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();openAlbum()},true);bar.insertBefore(b,t);return}}
+let tq=0;new MutationObserver(()=>{if(document.getElementById('xatab'))return;clearTimeout(tq);tq=setTimeout(()=>{try{tab()}catch(e){}},150)}).observe(document.body,{childList:true,subtree:true});
+setTimeout(()=>{try{tab()}catch(e){}},300);
+})();
+/* ===== アルバムここまで ===== */
