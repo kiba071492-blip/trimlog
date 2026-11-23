@@ -391,3 +391,59 @@ const fix=()=>{document.querySelectorAll('.xnote').forEach(p=>{if(p.dataset.x)re
 new MutationObserver(fix).observe(document.body,{childList:true,subtree:true});
 })();
 /* ===== 説明文ここまで ===== */
+/* ===== 追加：お気に入り・LINE・お店の住所 ===== */
+(function(){
+const q=(s,r)=>[...(r||document).querySelectorAll(s)];
+const byText=t=>q('button,a').filter(b=>b.textContent.trim()===t);
+const mapUrl=a=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a);
+const placeIn=t=>(S.places||[]).filter(p=>p.addr&&p.name&&t.includes(p.name)).sort((a,b)=>b.name.length-a.name.length)[0];
+
+/* お気に入り：ボタン整理＋お願いした内容 */
+function fav(){const rec=byText('この内容で記録する')[0];if(!rec)return;
+  rec.style.display='none';byText('お店で見せる').forEach(b=>b.style.display='none');
+  if(document.getElementById('xfmemo'))return;
+  const f=(S.favs||[]).find(f=>f.name&&q('h1,h2,h3,div,p').some(e=>e.children.length===0&&e.textContent.trim()===f.name));
+  let memo=f?(f.memo||f.order||f.note||''):'';
+  if(f&&!memo){const ids=[f.recId,f.rid,f.rec,f.fromRec,f.from].filter(Boolean);
+    const r=(S.records||[]).find(r=>ids.includes(r.id)||(f.photo&&(r.after===f.photo||r.before===f.photo))||(f.img&&(r.after===f.img||r.before===f.img)));
+    if(r)memo=memoOf(r)}
+  const d=document.createElement('div');d.id='xfmemo';d.className='card';
+  d.innerHTML='<div class="muted">お願いした内容</div><div class="pre" style="font-size:18px;font-weight:bold;margin-top:6px"></div>';
+  d.querySelector('.pre').textContent=memo||'メモはありません';
+  const ph=document.querySelector('.photo.big');if(ph)ph.after(d);else rec.before(d)}
+
+/* 次回の予約：LINEで送る・地図 */
+const skip=/予約を追加|^電話|LINEで送る|^地図$|^あと\d+日|^次回の予約|^今日$|^明日$/;
+function lines(c){return c.innerText.split('\n').map(s=>s.replace(/[›＞]/g,'').trim()).filter(s=>s&&!skip.test(s))}
+function line(){q('.card').forEach(c=>{if(c.dataset.xl)return;
+  const add=q('button,a',c).find(b=>b.textContent.includes('予約を追加'));if(!add)return;
+  if(!/\d+\/\d+\(.\)/.test(c.innerText))return;c.dataset.xl=1;
+  const p=placeIn(c.innerText);const w=document.createElement('div');w.className='row';w.style.margin='10px 0 4px';
+  w.innerHTML='<button class="btn sub small" type="button">LINEで送る</button>'+(p?'<a class="btn sub small" target="_blank">地図</a>':'');
+  w.querySelector('button').onclick=e=>{e.stopPropagation();const p2=placeIn(c.innerText);
+    const t='次回のトリミング予約\n'+lines(c).join('\n')+(p2&&p2.addr?'\n住所：'+p2.addr:'');
+    location.href='https://line.me/R/share?text='+encodeURIComponent(t)};
+  if(p){const a=w.querySelector('a');a.href=mapUrl(p.addr);a.onclick=e=>e.stopPropagation()}
+  add.before(w)})}
+
+/* お店の登録：住所・メモ */
+let P=null;
+function inpOf(l){let e=l.nextElementSibling;while(e&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName))e=e.nextElementSibling;return e||l.querySelector('input')}
+function shop(){const labs=q('label');const tl=labs.find(l=>l.textContent.includes('電話'));
+  if(!tl){P=null;return}if(document.getElementById('xaddr'))return;
+  const nl=labs.find(l=>l.textContent.includes('名')&&!l.textContent.includes('担当'));
+  const tin=inpOf(tl),nin=nl&&inpOf(nl);if(!tin||!nin)return;
+  const ex=(S.places||[]).find(p=>p.name===nin.value.trim());
+  P={addr:ex&&ex.addr||'',memo:ex&&ex.xmemo||'',nin};
+  const w=document.createElement('div');w.id='xaddr';
+  w.innerHTML='<label>住所</label><input id="xa" placeholder="例：東京都〇〇区〇〇1-2-3" autocomplete="street-address"><a id="xam" class="link" target="_blank" style="display:none">Googleマップで見る</a><label>メモ</label><textarea id="xm" placeholder="例：駐車場あり・2階・駅から5分"></textarea>';
+  tin.after(w);const a=w.querySelector('#xa'),m=w.querySelector('#xm'),ml=w.querySelector('#xam');
+  const upd=()=>{P.addr=a.value.trim();ml.style.display=P.addr?'block':'none';if(P.addr)ml.href=mapUrl(P.addr)};
+  a.value=P.addr;m.value=P.memo;upd();a.oninput=upd;m.oninput=()=>{P.memo=m.value}}
+if(typeof save==='function'&&!window.__xsave){window.__xsave=1;const o=save;
+  window.save=function(){try{if(P){const n=P.nin.value.trim();const p=(S.places||[]).find(p=>p.name===n);if(p){p.addr=P.addr;p.xmemo=P.memo}}}catch(e){}return o.apply(this,arguments)}}
+
+const run=()=>{try{fav()}catch(e){}try{line()}catch(e){}try{shop()}catch(e){}};
+new MutationObserver(run).observe(document.body,{childList:true,subtree:true});run();
+})();
+/* ===== お気に入り・LINE・住所ここまで ===== */
