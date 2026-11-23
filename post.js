@@ -775,3 +775,39 @@ ready.then(()=>{refresh();try{inject()}catch(e){}});
 new MutationObserver(()=>{try{inject()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{inject()}catch(e){}
 })();
 /* ===== アルバム（記録タブ）ここまで ===== */
+/* ===== 追加：アルバムにトリミング履歴 ===== */
+(function(){
+const css=document.createElement('style');
+css.textContent='#xrec .chip[data-id="own"]{display:none!important}#xh{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}.xh-y{font-size:14px;font-weight:bold;color:var(--sub);margin:20px 0 4px}.xh-y:first-child{margin-top:4px}.xh-c{display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}.xh-ph{width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--line);flex:none}.xh-ph img{width:100%;height:100%;object-fit:cover}#xrec .xh-make{display:block;width:100%;background:none;border:none;color:var(--main);font-size:14px;font-weight:bold;padding:10px 0 0;text-align:center;font-family:inherit}';
+document.head.appendChild(css);
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let ov=null;
+const selDog=()=>{const b=document.querySelector('#xrec .xr-dog.on');return b?b.dataset.id:''};
+const dn=id=>((S.dogs||[]).find(d=>d.id===id)||{}).name||'';
+const pn=id=>{const p=(S.places||[]).find(x=>x.id===id);return p?p.name||'':''};
+const fd=s=>s?String(s).replace(/-/g,'/'):'日付なし';
+function menus(r){const m=r.menus||r.menu||r.done||r.items||[];return Array.isArray(m)?m.join('・'):String(m||'')}
+function card(r,all){const ph=r.after||r.before,st=(typeof starHtml==='function'&&r.score)?starHtml(r.score):'',mn=menus(r),sh=pn(r.placeId);
+  return '<div class="xh-c" data-h="rec" data-id="'+E(r.id)+'"><div class="xh-ph">'+(ph?'<img data-img="'+E(ph)+'">':'')+'</div><div style="flex:1;min-width:0"><b>'+E(fd(r.date))+(r.time?' '+E(r.time):'')+'</b>'
+  +(all?'　<span>'+E(dn(r.dogId))+'</span>':'')+(sh?'<div class="muted">'+E(sh)+'</div>':'')+(mn?'<div class="muted">'+E(mn)+'</div>':'')+(st?'<div>'+st+'</div>':'')+'</div><span class="muted" style="font-size:20px">›</span></div>'}
+function open(){const dg=selDog(),all=!dg&&(S.dogs||[]).length>1;
+  const L=(S.records||[]).filter(r=>!dg||r.dogId===dg).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.time||'').localeCompare(String(a.time||'')));
+  let h='<header><button class="back" data-h="back">‹ 戻る</button><h1>トリミング履歴'+(dg?'（'+E(dn(dg))+'）':'')+'</h1></header><main class="pb">';
+  if(!L.length)h+='<p class="muted" style="text-align:center;margin:40px 0">まだ記録がありません</p>';
+  else{let y=null;L.forEach(r=>{const yy=String(r.date||'').slice(0,4)||'日付なし';if(yy!==y){y=yy;h+='<div class="xh-y">'+E(/^\d{4}$/.test(yy)?yy+'年':yy)+'</div>'}h+=card(r,all)});
+    h+='<p class="muted" style="text-align:center">全'+L.length+'回</p>'}
+  h+='</main>';if(!ov){ov=document.createElement('div');ov.id='xh';document.body.appendChild(ov)}ov.innerHTML=h;ov.scrollTop=0;
+  ov.querySelectorAll('img[data-img]').forEach(async im=>{try{const v=await getImg(im.dataset.img);if(v)im.src=typeof v==='string'?v:URL.createObjectURL(v)}catch(e){}})}
+function close(){if(ov)ov.remove();ov=null}
+function fix(){const w=document.getElementById('xrec');if(!w)return;
+  const b=w.querySelector('.row .btn[data-x="make"]');if(b){b.dataset.x='hist';b.textContent='トリミング履歴'}
+  if(!w.querySelector('.xh-make')){const row=w.querySelector('.row');if(row){const l=document.createElement('button');l.className='xh-make';l.dataset.x='make';l.textContent='クリスマス・お正月などの画像を作る ›';row.after(l)}}}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-x="hist"],[data-h]');
+  if(!t){if(ov&&e.target.closest&&e.target.closest('.tabbar button'))close();return}
+  e.preventDefault();e.stopPropagation();
+  if(t.dataset.x==='hist')return open();
+  const a=t.dataset.h;if(a==='back')return close();
+  if(a==='rec'){const id=t.dataset.id;close();if(typeof go==='function')go('rec',id)}},true);
+new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
+})();
+/* ===== トリミング履歴ここまで ===== */
