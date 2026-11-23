@@ -1,10 +1,10 @@
 /* ===== トリミングログ post.js ① 投稿画像 ===== */
 (function(){
 const TPL={chihuahua:'チワワ',simple:'シンプル',none:'写真だけ'};
-const DEST={reel:'縦長（9:16）',feed:'少し縦長（4:5）'};
-const SZ={reel:[1080,1920,[200,50,290,50]],feed:[1080,1350,[40,40,40,40]]};
+const DEST={reel:'縦長（9:16）',feed:'少し縦長（4:5）',wide:'横長（16:9）'};
+const SZ={reel:[1080,1920,[200,50,290,50]],feed:[1080,1350,[40,40,40,40]],wide:[1600,900,[30,30,30,30]]};
 const LAYS={h:'ビフォー・アフターを横に並べる',v:'ビフォー・アフターを縦に並べる',sep:'ビフォーとアフターを別々に2枚',after:'アフターだけ'};
-const FITS={cover:'枠いっぱい',contain:'全体を入れる'};
+const FITS={cover:'枠いっぱいに大きく',contain:'写真を切らずに全部'};
 const TS={s:['小',0.8],m:['中',1],l:['大',1.25]};
 const X={id:null,sepK:'b',imgs:{},slots:[],files:null,tok:0,ft:0,st:0,raf:0,ptrs:new Map(),act:null,d0:0,z0:1,bulk:[],bt:'',bc:{},base:null};
 const css=document.createElement('style');
@@ -58,7 +58,7 @@ function pill(ctx,text,x,y,st,f){const fs=Math.round(40*f);ctx.font='bold '+fs+'
   ctx.fillStyle=st.label;rr(ctx,x,y,w,h,h/2);ctx.fill();ctx.fillStyle=st.labelText;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,x+fs*0.6,y+h/2)}
 
 /* テンプレート */
-function frame(ctx,c,p,W,H,A,f){const st=STYLES[c.style]||STYLES[0],feed=c.dest==='feed';ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
+  function frame(ctx,c,p,W,H,A,f){const st=STYLES[c.style]||STYLES[0],feed=c.dest!=='reel';ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
   if(c.tpl==='none')return{st,L:A.x0,R:A.x1,top:A.y0,bottom:A.y1,gap:20,rad:16,fr:false,foot:()=>{}};
   const pad=24,L=A.x0+pad,R=A.x1-pad;
   if(c.tpl==='chihuahua'){
@@ -382,3 +382,13 @@ AFTER.resEdit=p=>{if(oRE)oRE(p);
 try{if(typeof db!=='undefined'&&db&&V[view])render()}catch(e){}
 })();
 /* ===== ②ここまで ===== */
+/* ===== 追加：説明文 ===== */
+(function(){
+const A='※ 縦長はストーリーズ・リール、4:5と横長はインスタの通常の投稿向けです。横向きの写真は「横長」がおすすめです。LINEで送るだけならどれでも大丈夫です。';
+const B='※「枠いっぱいに大きく」は写真のはしが少し切れます。「写真を切らずに全部」は切れませんが、すき間が白くなります。';
+const fix=()=>{document.querySelectorAll('.xnote').forEach(p=>{if(p.dataset.x)return;const t=p.textContent;
+  if(t.includes('縦長')){p.textContent=A;p.dataset.x=1}
+  else if(t.includes('枠いっぱい')||t.includes('全体')){p.textContent=B;p.dataset.x=1}})};
+new MutationObserver(fix).observe(document.body,{childList:true,subtree:true});
+})();
+/* ===== 説明文ここまで ===== */
