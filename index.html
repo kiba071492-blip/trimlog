@@ -641,7 +641,7 @@ function fixS(){S.dogs=S.dogs||[];S.places=S.places||[];S.records=S.records||[];
 (async()=>{try{await openDB();const s=await dbGet('state');if(s)S=s;fixS();await save();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});render()}
   catch(e){document.body.innerHTML='<p style="padding:20px">データを読み込めませんでした。Safariを開き直してください。</p>'}})();
 </script>
-<script src="post.js?v=26"></script>
+<script src="post.js?v=27"></script>
 </body>
 </html>
 
