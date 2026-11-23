@@ -933,3 +933,8 @@ document.addEventListener('click',e=>{if(!e.target.closest)return;
 new MutationObserver(()=>{try{injectRow()}catch(err){}}).observe(document.body,{childList:true,subtree:true});
 })();
 /* ===== お気に入りの表示項目・アルバムのお気に入りここまで ===== */
+/* ===== 追加：お気に入りはボタン1つだけ ===== */
+(function(){const s=document.createElement('style');
+s.textContent='#xfavrow .xfr-l,#xfavrow .chip:not([data-xf="*"]){display:none!important}#xfavrow [data-xf="*"]{font-size:0}#xfavrow [data-xf="*"]::before{content:"★ お気に入り";font-size:14px}';
+document.head.appendChild(s)})();
+/* ===== お気に入りはボタン1つだけここまで ===== */
