@@ -854,3 +854,82 @@ AFTER.xpost=async function(id){
   return oA.apply(this,arguments)};
 })();
 /* ===== お店はホームだけ・シンプルは文字なしここまで ===== */
+/* ===== 追加：お気に入りの表示項目・アルバムのお気に入り ===== */
+(function(){
+const css=document.createElement('style');
+css.textContent='#xfavrow{border-top:1px dashed #f0d5db;padding-top:8px;align-items:center}.xfr-l{flex:none;font-size:13px;font-weight:bold;color:#f5b301;margin-right:6px;white-space:nowrap}.xl2{font-size:13px;color:var(--sub);margin:16px 0 4px}.xl2:first-child{margin-top:0}';
+document.head.appendChild(css);
+const FF=[['photo','お気に入りの写真'],['before','ビフォーの写真'],['memo','お願いした内容'],['dog','ワンちゃん'],['shop','お店'],['staff','担当者'],['menu','やったこと'],['date','来店日'],['price','金額'],['score','点数'],['cond','体調']];
+const DEF=['photo','memo','shop','staff','date'];
+const st=()=>{S.settings=S.settings||{};if(!Array.isArray(S.settings.favShow))S.settings.favShow=DEF.slice();return S.settings.favShow};
+const pick=(o,ks)=>{if(!o)return'';for(const k of ks){const v=o[k];if(v!=null&&v!==''&&!(Array.isArray(v)&&!v.length))return v}return''};
+function srcRec(f){if(!f)return null;const id=pick(f,['rec','recId','fromRec','rid']);let r=id?recOf(id):null;
+  if(!r&&f.img)r=S.records.find(x=>x.after===f.img||x.before===f.img)||null;return r}
+function favKeys(f){const r=srcRec(f);if(!r)return[];if(f.img&&r.before===f.img&&r.after!==f.img)return['r'+r.id+'b'];return[r.after?'r'+r.id+'a':'r'+r.id+'b']}
+function val(k,f,r){
+  if(k==='memo')return f.memo||(r?memoOf(r):'');
+  if(k==='dog')return (dog(f.dogId||(r&&r.dogId))||{}).name||'';
+  if(k==='shop'){const p=r&&S.places.find(x=>x.id===r.placeId);return p?p.name:''}
+  if(k==='staff')return pick(f,['staff'])||pick(r,['staff','stylist','tanto','person']);
+  if(k==='menu'){const m=pick(r,['menus']);return Array.isArray(m)?m.join('・'):m}
+  if(k==='date')return r?visitStr(r):'';
+  if(k==='price'){const v=pick(r,['price','fee','cost','amount']);return v?yen(v):''}
+  if(k==='score')return r&&r.score?starHtml(r.score):'';
+  if(k==='cond'){const v=pick(r,['cond','condition','health']);return Array.isArray(v)?v.join('・'):v}
+  return''}
+
+/* お気に入りの画面 */
+let OPEN=false;
+const big=im=>`<div class="photo big" style="aspect-ratio:auto;margin-bottom:10px"><img data-img="${im}" style="height:auto"></div>`;
+V.xfav=id=>{const f=favOf(id);if(!f)return shell('お気に入り','<p class="muted">見つかりません。</p>',{back:1});
+  const r=srcRec(f),on=st();let h='';
+  for(const [k,l] of FF){if(!on.includes(k))continue;
+    if(k==='photo'){const im=f.img||(r&&cover(r));if(im)h+=big(im);continue}
+    if(k==='before'){if(r&&r.before&&r.before!==f.img)h+='<div class="xl2">ビフォー</div>'+big(r.before);continue}
+    const v=val(k,f,r);if(!v)continue;
+    h+=k==='memo'?`<div class="xl2">${l}</div><div class="xmemo">${esc(v)}</div>`:`<div class="xl2">${l}</div><div style="font-size:17px">${k==='score'?v:esc(v)}</div>`}
+  const panel=OPEN?`<div class="card"><b>表示する項目</b><p class="muted" style="margin:4px 0 4px">チェックした項目だけが出ます。すべてのお気に入りで共通です。</p>${FF.map(([k,l])=>`<label class="chk" style="margin:12px 0"><input type="checkbox" ${on.includes(k)?'checked':''} onchange="xFavTog('${k}',this.checked)">${l}</label>`).join('')}<button class="btn small" onclick="xFavPanel()">閉じる</button></div>`:'';
+  return shell(f.name||'お気に入り',`<div class="card">${h||'<p class="muted" style="margin:0">表示する項目が選ばれていません。</p>'}</div>
+<button class="btn sub" onclick="xFavPanel()">⚙ 表示する項目を選ぶ</button>${panel}
+<div class="card" style="padding:0 14px">${menuRow('名前を変える','',"xFavName('"+f.id+"')")}${menuRow('お願いした内容を直す','',"xFavMemo('"+f.id+"')")}${r?menuRow('この記録を開く','',"go('rec','"+r.id+"')"):''}</div>
+<button class="link danger" onclick="xFavDel('${f.id}')">お気に入りから外す</button>`,{back:1})};
+window.xFavPanel=()=>{OPEN=!OPEN;render()};
+window.xFavTog=(k,c)=>{const a=st(),i=a.indexOf(k);if(c&&i<0)a.push(k);if(!c&&i>=0)a.splice(i,1);
+  a.sort((x,y)=>FF.findIndex(z=>z[0]===x)-FF.findIndex(z=>z[0]===y));save();const y=window.scrollY;render();window.scrollTo(0,y)};
+window.xFavName=id=>{const f=favOf(id);if(!f)return;const v=prompt('お気に入りの名前',f.name||'');if(v==null||!v.trim())return;f.name=v.trim();save();render()};
+window.xFavMemo=id=>{const f=favOf(id);if(!f)return;const v=prompt('お願いした内容',f.memo||'');if(v==null)return;f.memo=v.trim();save();render()};
+window.xFavDel=id=>{if(!confirm('お気に入りから外しますか？（記録と写真は消えません）'))return;S.favs=S.favs.filter(x=>x.id!==id);save();back()};
+const _go=go;go=function(v,p,o){if(v==='fav'){v='xfav';OPEN=false}return _go(v,p,o)};
+
+/* アルバムのお気に入りの行 */
+let FAV='',SYN=false;
+function albumDog(){const b=document.querySelector('#xrec .xr-dog.on');return b?b.dataset.id:''}
+function visFavs(){const dg=albumDog();return (S.favs||[]).filter(f=>{const r=srcRec(f),d=f.dogId||(r&&r.dogId);return(!dg||d===dg)&&favKeys(f).length})}
+function applyF(){const box=document.getElementById('xrec');if(!box)return;
+  let keys=null;if(FAV){keys=new Set(visFavs().filter(f=>FAV==='*'||f.id===FAV).flatMap(favKeys))}
+  const ts=[...box.querySelectorAll('.xa-t[data-id]')];
+  ts.forEach(t=>{t.style.display=!keys||keys.has(t.dataset.id)?'':'none'});
+  box.querySelectorAll('.xa-g').forEach(g=>{const any=[...g.children].some(c=>c.style.display!=='none');g.style.display=any?'':'none';const m=g.previousElementSibling;if(m&&m.classList.contains('xa-m'))m.style.display=any?'':'none'});
+  if(FAV)box.querySelectorAll('.xa-chips:not(#xfavrow) .chip.on').forEach(c=>c.classList.remove('on'));
+  let e=document.getElementById('xfavnone');const none=keys&&!ts.some(t=>t.style.display!=='none');
+  if(none&&!e){e=document.createElement('p');e.id='xfavnone';e.className='muted';e.textContent='お気に入りの写真がありません。';const row=document.getElementById('xfavrow');if(row)row.after(e)}
+  else if(!none&&e)e.remove()}
+function injectRow(){const box=document.getElementById('xrec');let row=document.getElementById('xfavrow');
+  const ch=box&&box.querySelector('.xa-chips:not(#xfavrow)');const fs=box?visFavs():[];
+  if(!ch||!fs.length){if(row)row.remove();FAV='';return}
+  if(FAV&&FAV!=='*'&&!fs.some(f=>f.id===FAV))FAV='';
+  const html=`<span class="xfr-l">★ お気に入り</span><button class="chip${FAV==='*'?' on':''}" data-xf="*">すべて</button>`+fs.map(f=>`<button class="chip${FAV===f.id?' on':''}" data-xf="${esc(f.id)}">${esc(f.name||'お気に入り')}</button>`).join('');
+  if(!row){row=document.createElement('div');row.id='xfavrow';row.className='xa-chips'}
+  if(ch.nextElementSibling!==row)ch.after(row);
+  if(row.dataset.sig!==html){row.innerHTML=html;row.dataset.sig=html}
+  applyF()}
+document.addEventListener('click',e=>{if(!e.target.closest)return;
+  const t=e.target.closest('#xfavrow [data-xf]');
+  if(t){const v=t.dataset.xf;FAV=FAV===v?'':v;const all=document.querySelector('#xrec .xa-chips:not(#xfavrow) [data-x="flt"][data-id="all"]');
+    if(all){SYN=true;try{all.click()}finally{SYN=false}}
+    const row=document.getElementById('xfavrow');if(row)row.dataset.sig='';injectRow();return}
+  if(SYN)return;
+  const o=e.target.closest('#xrec [data-x="flt"]');if(o)FAV=''},true);
+new MutationObserver(()=>{try{injectRow()}catch(err){}}).observe(document.body,{childList:true,subtree:true});
+})();
+/* ===== お気に入りの表示項目・アルバムのお気に入りここまで ===== */
