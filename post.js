@@ -448,3 +448,37 @@ const run=()=>{try{fav()}catch(e){}try{line()}catch(e){}try{shop()}catch(e){}};
 new MutationObserver(run).observe(document.body,{childList:true,subtree:true});run();
 })();
 /* ===== お気に入り・LINE・住所ここまで ===== */
+/* ===== 追加：お店のLINE・地図 ===== */
+(function(){
+const q=(s,r)=>[...(r||document).querySelectorAll(s)];
+const dg=s=>String(s||'').replace(/\D/g,'');
+const X=()=>{S.settings=S.settings||{};return S.settings.shopX=S.settings.shopX||{}};
+const mapUrl=a=>'https://maps.apple.com/?q='+encodeURIComponent(a);
+function lineUrl(v){v=String(v||'').trim();if(!v)return'';if(/^https?:\/\//.test(v))return v;if(v[0]!=='@')v='@'+v;return 'https://line.me/R/oaMessage/'+encodeURIComponent(v)+'/'}
+function infoByTel(h){const t=dg(h);if(!t)return null;const p=(S.places||[]).find(p=>p.tel&&dg(p.tel)===t);if(!p)return null;const x=X()[p.name]||{};return{line:x.line||'',addr:x.addr||p.addr||''}}
+function mini(t,url){const a=document.createElement('a');a.className='minicall';a.textContent=t;a.href=url;a.style.marginLeft='6px';a.onclick=e=>e.stopPropagation();return a}
+function btns(){
+  q('button,a').forEach(b=>{if(b.textContent.trim()==='LINEで送る'){const r=b.parentElement;(r&&r.classList.contains('row')?r:b).style.display='none'}});
+  q('a.minicall[href^="tel:"]').forEach(t=>{if(t.dataset.x2)return;t.dataset.x2=1;const i=infoByTel(t.getAttribute('href'));if(!i)return;
+    let last=t;if(i.line){const a=mini('LINE',lineUrl(i.line));last.after(a);last=a}
+    if(i.addr){last.after(mini('地図',mapUrl(i.addr)))}})}
+function inpOf(l){let e=l.nextElementSibling;while(e&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName))e=e.nextElementSibling;return e||l.querySelector('input,textarea')}
+function shop(){const labs=q('label');const tl=labs.find(l=>l.textContent.includes('電話'));if(!tl)return;
+  const old=document.getElementById('xaddr');if(old){if(old.dataset.v2)return;old.remove()}
+  const nl=labs.find(l=>/名/.test(l.textContent)&&!/担当/.test(l.textContent));const tin=inpOf(tl),nin=nl&&inpOf(nl);if(!tin||!nin)return;
+  let key=nin.value.trim();const p=(S.places||[]).find(p=>p.name===key);
+  const v=Object.assign({addr:p&&p.addr||'',line:'',memo:p&&p.xmemo||''},X()[key]||{});
+  const w=document.createElement('div');w.id='xaddr';w.dataset.v2=1;
+  w.innerHTML='<label>住所</label><input id="xa" placeholder="例：東京都〇〇区〇〇1-2-3"><a id="xam" class="link" style="display:none">マップで見る</a><label>お店のLINE</label><input id="xl" placeholder="例：@abc1234 またはLINEのURL" autocapitalize="off" autocorrect="off"><a id="xlt" class="link" style="display:none">LINEを開いて確かめる</a><label>メモ</label><textarea id="xm" placeholder="例：駐車場あり・2階・駅から5分"></textarea>';
+  tin.after(w);
+  const a=w.querySelector('#xa'),l=w.querySelector('#xl'),m=w.querySelector('#xm'),am=w.querySelector('#xam'),lt=w.querySelector('#xlt');
+  a.value=v.addr;l.value=v.line;m.value=v.memo;let tm=0;
+  const show=()=>{am.style.display=v.addr?'block':'none';if(v.addr)am.href=mapUrl(v.addr);lt.style.display=v.line?'block':'none';if(v.line)lt.href=lineUrl(v.line)};
+  const put=()=>{v.addr=a.value.trim();v.line=l.value.trim();v.memo=m.value;show();
+    const n=nin.value.trim(),x=X();if(key&&key!==n)delete x[key];key=n;
+    if(n){x[n]={addr:v.addr,line:v.line,memo:v.memo};clearTimeout(tm);tm=setTimeout(()=>save(),400)}};
+  show();a.oninput=put;l.oninput=put;m.oninput=put;nin.addEventListener('input',put)}
+const run=()=>{try{btns()}catch(e){}try{shop()}catch(e){}};
+new MutationObserver(run).observe(document.body,{childList:true,subtree:true});run();
+})();
+/* ===== LINE・地図ここまで ===== */
