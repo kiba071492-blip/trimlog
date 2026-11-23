@@ -56,6 +56,54 @@ function xDirUI(){const cv=document.getElementById('cmp');if(!cv)return;const r=
   b.style.display=both?'':'none';
   b.innerHTML=`<button class="${v?'':'on'}" onclick="xTpDir('h')">横に並べる</button><button class="${v?'on':''}" onclick="xTpDir('v')">縦に並べる</button>`}
 /* ===== 追加ここまで ===== */
+/* ===== 追加2：作り方を選ぶ（TSの行の上） ===== */
+const LAYS={h:'ビフォー・アフターを横に並べる',v:'ビフォー・アフターを縦に並べる',sep:'ビフォーとアフターを別々に2枚',after:'アフターだけ'};
+let xSepK='b',xLayKey='',xSepFiles=null,xSepTok=0,xSepT=0;
+function lay(c,r){if(!(r.before&&r.after))return'one';let l=c.lay;
+  if(!LAYS[l])l=c.mode==='after'?'after':(c.dir==='v'?'v':'h');return l}
+slotsFor=function(c,r,G){const h=G.bottom-G.top,w=G.R-G.L,L=lay(c,r);
+  const one=k=>[{k,id:k==='a'?r.after:r.before,x:G.L,y:G.top,w,h,lab:k==='a'?'A':'B'}];
+  if(L==='one')return one(r.after?'a':'b');
+  if(L==='after')return one('a');
+  if(L==='sep')return one(xSepK);
+  if(L==='v'){const hh=(h-G.gap)/2;return[{k:'b',id:r.before,x:G.L,y:G.top,w,h:hh,lab:'B'},{k:'a',id:r.after,x:G.L,y:G.top+hh+G.gap,w,h:hh,lab:'A'}]}
+  const ww=(w-G.gap)/2;return[{k:'b',id:r.before,x:G.L,y:G.top,w:ww,h,lab:'B'},{k:'a',id:r.after,x:G.L+ww+G.gap,y:G.top,w:ww,h,lab:'A'}]};
+crop=function(r,k,c){c=c||cfg();r.tpCrop=r.tpCrop||{};const key=ckey(c,r)+'|x3'+lay(c,r);const o=r.tpCrop[key]=r.tpCrop[key]||{};
+  const id=k==='a'?r.after:k==='b'?r.before:null;
+  if(!o[k]||(id&&o[k].pid!==id))o[k]={z:1,x:0,y:0,pid:id};return o[k]};
+const xDraw1=draw;
+draw=function(){const r=recOf(T.id),c=cfg();
+  if(r){const L=lay(c,r);if(L!=='one')c.mode=L==='after'?'after':'both'}
+  xDraw1();xLayUI();xSepPrep()};
+window.xSetLay=v=>{const c=cfg();c.lay=v;c.dir=v==='v'?'v':'h';c.mode=v==='after'?'after':'both';xSepK='b';xLayKey='';save();redraw()};
+window.xSepView=k=>{xSepK=k;xLayKey='';redraw()};
+function xLayUI(){const cv=document.getElementById('cmp');if(!cv)return;const r=recOf(T.id);if(!r)return;
+  const od=document.getElementById('x_dir');if(od)od.style.display='none';
+  document.querySelectorAll('main button').forEach(b=>{const t=b.textContent.trim();if(t!==MD.both&&t!==MD.after)return;const p=b.parentNode;
+    if(p&&[...p.children].every(k=>k.tagName==='BUTTON'&&[MD.both,MD.after].includes(k.textContent.trim())))p.style.display='none';else b.style.display='none'});
+  let w=document.getElementById('x_lay');
+  if(!w){w=document.createElement('div');w.id='x_lay';w.className='card';w.style.margin='10px 0';
+    const host=cv.closest('.card')||cv.parentNode;host.parentNode.insertBefore(w,host.nextSibling);xLayKey=''}
+  const c=cfg(),L=lay(c,r),key=L+'|'+xSepK;if(key===xLayKey)return;xLayKey=key;
+  if(L==='one'){w.innerHTML='<div class="muted">写真が1枚なので、1枚の画像で作ります。</div>';return}
+  w.innerHTML=`<div class="muted" style="margin-bottom:6px">作り方</div><select onchange="xSetLay(this.value)" style="width:100%;font-size:16px;padding:10px;border-radius:10px;border:1px solid #ddd;background:#fff">${Object.entries(LAYS).map(([k,v])=>`<option value="${k}"${k===L?' selected':''}>${v}</option>`).join('')}</select>${L==='sep'?`<div class="seg" style="margin-top:10px"><button class="${xSepK==='b'?'on':''}" onclick="xSepView('b')">1枚目 ビフォー</button><button class="${xSepK==='a'?'on':''}" onclick="xSepView('a')">2枚目 アフター</button></div><div class="muted" style="margin-top:6px">押したほうの写真を、上の画面で動かして調整できます。</div>`:''}`}
+function xSepPrep(){const r=recOf(T.id);xSepFiles=null;if(!r)return;const c=cfg();if(lay(c,r)!=='sep')return;
+  const tok=++xSepTok;clearTimeout(xSepT);
+  xSepT=setTimeout(async()=>{const p=pt(r),keep=xSepK,cvs=[];
+    for(const k of['b','a']){xSepK=k;const cv=document.createElement('canvas');paint(cv,c,p,G=>slotsOne(c,r,G,p),s=>crop(r,s.k));cvs.push([k,cv])}
+    xSepK=keep;const out=[];
+    for(const[k,cv]of cvs){const b=await new Promise(res=>cv.toBlob(res,'image/jpeg',0.92));if(b)out.push(new File([b],(k==='b'?'1_before':'2_after')+'.jpg',{type:'image/jpeg'}))}
+    if(tok===xSepTok&&out.length===2)xSepFiles=out},300)}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(!b||!document.getElementById('cmp'))return;
+  const t=b.textContent;if(!/共有|保存|投稿する/.test(t)||/まとめて|元に戻す|テンプレート/.test(t))return;
+  const r=recOf(T.id);if(!r||lay(cfg(),r)!=='sep')return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  if(!xSepFiles)return toast('画像を準備しています。もう一度押してください');
+  try{let cap=caption(r);if(Array.isArray(cap))cap=cap.join(' ');if(cap&&navigator.clipboard)navigator.clipboard.writeText(cap).catch(()=>{})}catch(err){}
+  if(navigator.canShare&&navigator.canShare({files:xSepFiles}))navigator.share({files:xSepFiles}).catch(()=>{});
+  else xSepFiles.forEach(f=>{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click()})},true);
+new MutationObserver(()=>document.querySelectorAll('main button').forEach(b=>{if(b.textContent.trim()==='インスタに投稿する')b.textContent='投稿画像を作る'})).observe(document.documentElement,{childList:true,subtree:true});
+/* ===== 追加2ここまで ===== */
 
 const TS={s:['小',0.8],m:['中',1],l:['大',1.25]};
 const MD={both:'ビフォー＋アフター',after:'アフターだけ'};
