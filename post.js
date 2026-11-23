@@ -58,6 +58,7 @@ function pill(ctx,text,x,y,st,f){const fs=Math.round(40*f);ctx.font='bold '+fs+'
   ctx.fillStyle=st.label;rr(ctx,x,y,w,h,h/2);ctx.fill();ctx.fillStyle=st.labelText;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,x+fs*0.6,y+h/2)}
 /* テンプレート */
   function frame(ctx,c,p,W,H,A,f){const st=STYLES[c.style]||STYLES[0],feed=c.dest!=='reel';ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
+  if(c.tpl==='none'){const FN='"Hiragino Sans",sans-serif',T=(t,fs,y,w)=>{let s=fs;do{ctx.font=w+' '+s+'px '+FN;s-=4}while(s>20&&ctx.measureText(t).width>A.x1-A.x0-60);ctx.fillText(t,W/2,y)};return{st,L:0,R:W,top:0,bottom:H,gap:6,rad:0,fr:false,foot:()=>{ctx.save();ctx.fillStyle='#fff';ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=14;ctx.globalAlpha=.85;ctx.font='bold 34px '+FN;ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(APP_NAME,A.x1-30,A.y1-30);ctx.globalAlpha=1;ctx.textAlign='center';let y=A.y1-110;if(p.sub){T(p.sub,50*f,y,'');y-=70*f}if(p.title)T(p.title,84*f,y,'bold');ctx.restore()}}}
   if(c.tpl==='none')return{st,L:A.x0,R:A.x1,top:A.y0,bottom:A.y1-50,gap:20,rad:16,fr:false,foot:()=>mark(ctx,st,A.x1,A.y1-22)};
   const pad=24,L=A.x0+pad,R=A.x1-pad;
   if(c.tpl==='chihuahua'){
