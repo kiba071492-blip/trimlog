@@ -546,3 +546,22 @@ function fix(){
 new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
 })();
 /* ===== 電話・LINE・マップここまで ===== */
+/* ===== 追加：次回の予約の見た目 ===== */
+(function(){
+const q=(s,r)=>[...(r||document).querySelectorAll(s)];
+const DT=/\d+\/\d+\(.\)/g;
+const cnt=t=>(t.match(DT)||[]).length;
+function rowsIn(card){let el=card;for(let i=0;i<6;i++){const kids=[...el.children].filter(k=>cnt(k.textContent)>0);
+  if(kids.length>=2)return kids;if(kids.length===1){if(cnt(kids[0].textContent)>1){el=kids[0];continue}return kids}return[]}return[]}
+function fix(){
+  q('button,a').forEach(b=>{if(b.dataset.xr)return;if(!b.textContent.includes('予約を追加'))return;if(b.closest('#xshops'))return;
+    b.dataset.xr=1;b.classList.remove('link');b.classList.add('btn','sub');b.style.marginTop='14px';
+    const card=b.closest('.card');if(!card)return;
+    rowsIn(card).forEach((r,i)=>{r.style.padding='14px 0';r.style.borderTop=i?'2px solid #f0d5db':'none'})});
+  q('div,span,p').forEach(e=>{if(e.children.length)return;const t=e.textContent.trim();
+    if(!/^(あと\d+日|今日|明日)$/.test(t))return;const pv=e.previousElementSibling;if(pv&&pv.classList.contains('xnear'))return;
+    const l=document.createElement('div');l.className='muted xnear';l.textContent='直近の予約まで';l.style.fontWeight='bold';l.style.marginBottom='2px';e.before(l)});
+}
+new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
+})();
+/* ===== 予約の見た目ここまで ===== */
