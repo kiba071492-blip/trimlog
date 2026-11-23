@@ -587,3 +587,16 @@ document.addEventListener('click',e=>{
   let t=0;const iv=setInterval(()=>{if(sv()){clearInterval(iv);pop()}else if(++t>150)clearInterval(iv)},200)},true);
 })();
 /* ===== お知らせここまで ===== */
+/* ===== 追加3：お知らせの誤表示と「作り方」の位置 ===== */
+(function(){
+const onBk=()=>{const h=document.querySelector('header h1');return !!h&&/バックアップ/.test(h.textContent)};
+function fix(){
+  const p=document.getElementById('x_bkpop');if(p&&!onBk())p.remove();
+  const w=document.getElementById('x_lay'),cv=document.getElementById('cmp');
+  if(w&&cv){const host=cv.closest('.card')||cv.parentNode;
+    if(host.previousElementSibling!==w)host.parentNode.insertBefore(w,host);
+    if(w.style.margin!=='0px 0px 12px')w.style.margin='0 0 12px'}}
+new MutationObserver(fix).observe(document.body,{childList:true,subtree:true});
+fix();
+})();
+/* ===== 追加3ここまで ===== */
