@@ -578,16 +578,17 @@ function fix(){
 new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
 })();
 /* ===== ボタン下の段ここまで ===== */
-/* ===== 追加：記録に写真 ===== */
+/* ===== 追加：アルバム（記録タブ） ===== */
 (function(){
 const KINDS={xmas:'クリスマス',ny:'お正月',grow:'成長アルバム',year:'1年まとめ'};
 const SHAPES={reel:['縦長（9:16）',1080,1920],feed:['少し縦長（4:5）',1080,1350],sq:['正方形',1080,1080]};
 const FLT={all:'すべて',after:'アフター',before:'ビフォー',own:'普段の写真'};
 const FN=typeof FONT!=='undefined'?FONT:'"Hiragino Sans",sans-serif';
-const V={mode:'list',dog:'',flt:'all',scr:'',key:'',file:null};
-const M={kind:'xmas',per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],file:null,t:0};
+const V={dog:'',flt:'all',scr:'',key:'',file:null};
+const M={kind:'xmas',per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],file:null,t:0,dog:''};
 const D={list:[],tags:['お散歩','お出かけ','誕生日'],tagOf:{}};
 const SRC={},IMS={},KEYS={};let ov=null,tok=0;
+try{TABS.forEach(t=>{if(t[0]==='history')t[1]='アルバム'})}catch(e){}
 
 /* 保存場所 */
 let dbp=null;
@@ -598,7 +599,7 @@ const ready=aget('data').then(v=>{if(v&&typeof v==='object'){if(Array.isArray(v.
 const saveD=()=>aset('data',D).catch(()=>alert('保存できませんでした'));
 
 const css=document.createElement('style');
-css.textContent='#xatab{display:none!important}main.xr-photo>*:not(#xrec){display:none!important}#xrec{margin-bottom:6px}#xa{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}#xa .savebar{z-index:31}.xa-chips{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;margin:4px 0}.xa-chips .chip{flex:none;white-space:nowrap}.xa-m{font-size:14px;font-weight:bold;margin:18px 0 8px}.xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.xa-t{position:relative;aspect-ratio:1/1;background:var(--line);border-radius:8px;overflow:hidden}.xa-t img{width:100%;height:100%;object-fit:cover;display:block}.xa-t.on{outline:4px solid var(--main);outline-offset:-4px}.xa-lb{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 6px}.xa-ck{position:absolute;top:4px;right:4px;background:var(--main);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}';
+css.textContent='#xatab{display:none!important}main.xr-photo>*:not(#xrec){display:none!important}.xr-dogs{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 12px}.xr-dog{flex:none;width:62px;text-align:center;font-size:12px;color:var(--sub);background:none;border:none;padding:0;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xr-dog i{display:flex;width:56px;height:56px;margin:0 auto 4px;border-radius:50%;overflow:hidden;background:var(--line);align-items:center;justify-content:center;font-size:24px;font-style:normal;border:3px solid #fff;box-shadow:0 0 0 1px #eee}.xr-dog img{width:100%;height:100%;object-fit:cover}.xr-dog.on{color:var(--main);font-weight:bold}.xr-dog.on i{box-shadow:0 0 0 3px var(--main)}.xr-dog.hid{opacity:.5}#xrec .row .btn{margin:0}#xa{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}#xa .savebar{z-index:31}.xa-chips{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;margin:8px 0 4px}.xa-chips .chip{flex:none;white-space:nowrap}.xa-m{font-size:14px;font-weight:bold;margin:18px 0 8px}.xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.xa-t{position:relative;aspect-ratio:1/1;background:var(--line);border-radius:8px;overflow:hidden}.xa-t img{width:100%;height:100%;object-fit:cover;display:block}.xa-t.on{outline:4px solid var(--main);outline-offset:-4px}.xa-lb{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 6px}.xa-ck{position:absolute;top:4px;right:4px;background:var(--main);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}';
 document.head.appendChild(css);
 
 /* 共通 */
@@ -625,28 +626,32 @@ function flt(L){const f=V.flt;if(f==='after')return L.filter(x=>x.label==='ア�
   if(f.indexOf('t:')===0){const t=f.slice(2);return L.filter(x=>tagsOf(x.key).includes(t))}return L}
 async function srcOf(it){if(SRC[it.key])return SRC[it.key];let s=null;try{s=it.src==='rec'?await getImg(it.img):await aget('img_'+it.img)}catch(e){}if(s&&typeof s!=='string')s=URL.createObjectURL(s);if(s)SRC[it.key]=s;return s}
 async function imOf(it){if(IMS[it.key])return IMS[it.key];const s=await srcOf(it);if(!s)return null;const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});if(im)IMS[it.key]=im;return im}
+async function dogSrc(d){for(const k of ['photo','icon','img','image','pic','avatar']){const v=d[k];if(typeof v==='string'&&v){if(/^(data:|blob:|https?:)/.test(v))return v;try{const s=await getImg(v);if(s)return typeof s==='string'?s:URL.createObjectURL(s)}catch(e){}}}
+  const L=items(d.id),it=L.find(x=>x.label==='アフター')||L[0];return it?await srcOf(it):null}
 function shrink(file){return new Promise(res=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{const k=Math.min(1,1600/Math.max(i.naturalWidth,i.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.85))};i.onerror=()=>{URL.revokeObjectURL(u);res(null)};i.src=u})}
 function shareFile(f){if(!f){msg('準備中です。もう一度押してください');return}if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f]}).catch(()=>{});else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}
 const loadImgs=el=>el.querySelectorAll('img[data-k]').forEach(async im=>{const it=KEYS[im.dataset.k];if(!it)return;const s=await srcOf(it);if(s)im.src=s});
+const loadDogs=el=>el.querySelectorAll('img[data-dog]').forEach(async im=>{const d=dogs().find(x=>x.id===im.dataset.dog);const s=d?await dogSrc(d):null;if(s)im.src=s;else im.replaceWith('🐶')});
 
-/* 記録タブの中 */
+/* アルバムの中 */
 function chips(withNew){const c=(v,t)=>'<button class="chip'+(V.flt===v?' on':'')+'" data-x="flt" data-id="'+E(v)+'">'+E(t)+'</button>';
   return '<div class="xa-chips">'+Object.keys(FLT).map(k=>c(k,FLT[k])).join('')+D.tags.map(t=>c('t:'+t,'#'+t)).join('')+(withNew?'<button class="chip mine" data-x="newtag">＋ タグ</button>':'')+'</div>'}
 function thumbLb(it){if(it.src==='rec')return it.label;const t=tagsOf(it.key)[0];return t?'#'+t:''}
-function recHtml(){let h='<div class="seg"><button class="'+(V.mode==='list'?'on':'')+'" data-x="mode" data-id="list">リスト</button><button class="'+(V.mode==='photo'?'on':'')+'" data-x="mode" data-id="photo">写真</button></div>';
-  if(V.mode!=='photo')return h;
-  const ds=dogs().slice().sort((a,b)=>!!a.hidden-!!b.hidden);
-  if(ds.length>1)h+='<div class="xa-chips" style="margin-top:10px"><button class="chip'+(!V.dog?' on':'')+'" data-x="dog" data-id="">全員</button>'+ds.map(d=>'<button class="chip'+(V.dog===d.id?' on':'')+'" data-x="dog" data-id="'+E(d.id)+'">'+E(d.name||'名前なし')+(d.hidden?'（非表示）':'')+'</button>').join('')+'</div>';
-  h+='<div class="row" style="margin-top:8px"><button class="btn sub" data-x="add">＋ 写真を追加</button><button class="btn" data-x="make">画像を作る</button></div>'+chips(true);
+function dogRow(){const ds=dogs().slice().sort((a,b)=>!!a.hidden-!!b.hidden);if(ds.length<2)return '';
+  const b=(id,name,inner,h)=>'<button class="xr-dog'+(V.dog===id?' on':'')+(h?' hid':'')+'" data-x="dog" data-id="'+E(id)+'"><i>'+inner+'</i>'+E(name)+'</button>';
+  return '<div class="xr-dogs">'+b('','全員','🐾')+ds.map(d=>b(d.id,d.name||'名前なし','<img data-dog="'+E(d.id)+'" alt="">',d.hidden)).join('')+'</div>'}
+function recHtml(){let h=dogRow()+'<div class="row"><button class="btn small sub" data-x="add">＋ 写真を追加</button><button class="btn small" data-x="make">画像を作る</button></div>'+chips(true);
   const L=flt(items(V.dog));
   if(!L.length)return h+'<p class="muted" style="text-align:center;margin:30px 0">写真がありません</p>';
   let cur=null;L.forEach(it=>{const m=(it.date||'').slice(0,7);if(m!==cur){if(cur!==null)h+='</div>';cur=m;const mm=m.match(/^(\d{4})-(\d{2})/);h+='<div class="xa-m">'+(mm?mm[1]+'年'+Number(mm[2])+'月':'日付なし')+'</div><div class="xa-g">'}
     const lb=thumbLb(it);h+='<div class="xa-t" data-x="open" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'">'+(lb?'<span class="xa-lb">'+E(lb)+'</span>':'')+'</div>'});
   return h+'</div><button class="link" data-x="tags">タグを整理する</button>'}
-function refresh(){const w=document.getElementById('xrec');if(!w)return;w.innerHTML=recHtml();loadImgs(w);const m=w.parentElement;if(m)m.classList.toggle('xr-photo',V.mode==='photo')}
-function inject(){if(typeof view==='undefined'||view!=='history')return;const m=document.querySelector('main');if(!m)return;
-  if(!m.querySelector('#xrec')){const w=document.createElement('div');w.id='xrec';m.insertBefore(w,m.firstChild);refresh()}
-  else m.classList.toggle('xr-photo',V.mode==='photo')}
+function refresh(){const w=document.getElementById('xrec');if(!w)return;w.innerHTML=recHtml();loadImgs(w);loadDogs(w)}
+function rename(){document.querySelectorAll('.tabbar button').forEach(b=>{if(b.textContent.trim()==='記録')b.textContent='アルバム'})}
+function inject(){rename();if(typeof view==='undefined'||view!=='history')return;
+  const h1=document.querySelector('header h1');if(h1&&h1.textContent.trim()==='記録')h1.textContent='アルバム';
+  const m=document.querySelector('main');if(!m)return;if(!m.classList.contains('xr-photo'))m.classList.add('xr-photo');
+  if(!m.querySelector('#xrec')){const w=document.createElement('div');w.id='xrec';m.insertBefore(w,m.firstChild);refresh()}}
 
 /* 重ねて開く画面 */
 const head=t=>'<header><button class="back" data-x="back">‹ 戻る</button><h1>'+E(t)+'</h1></header>';
@@ -749,7 +754,6 @@ function mshare(){if(!M.sel.length){msg('写真をえらんでください');ret
   try{navigator.clipboard.writeText(tags).catch(()=>{})}catch(e){}shareFile(M.file)}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-x]');if(!t||!t.closest('#xrec,#xa'))return;e.preventDefault();e.stopPropagation();
   const a=t.dataset.x,id=t.dataset.id;
-  if(a==='mode'){V.mode=id;return refresh()}
   if(a==='dog'){V.dog=id;return refresh()}
   if(a==='flt'){V.flt=id;if(V.scr==='make'){defSel();return showOv()}return refresh()}
   if(a==='open'){V.key=id;V.scr='open';return showOv()}
@@ -770,4 +774,4 @@ document.addEventListener('click',e=>{if(ov&&e.target.closest&&e.target.closest(
 ready.then(()=>{refresh();try{inject()}catch(e){}});
 new MutationObserver(()=>{try{inject()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{inject()}catch(e){}
 })();
-/* ===== 記録に写真ここまで ===== */
+/* ===== アルバム（記録タブ）ここまで ===== */
