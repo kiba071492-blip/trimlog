@@ -578,16 +578,16 @@ function fix(){
 new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
 })();
 /* ===== ボタン下の段ここまで ===== */
-/* ===== 追加：アルバム（記録タブ） ===== */
+/* ===== 追加：アルバム2 ===== */
 (function(){
 const KINDS={xmas:'クリスマス',ny:'お正月',grow:'成長アルバム',year:'1年まとめ'};
 const SHAPES={reel:['縦長（9:16）',1080,1920],feed:['少し縦長（4:5）',1080,1350],sq:['正方形',1080,1080]};
-const FLT={all:'すべて',after:'アフター',before:'ビフォー',own:'普段の写真'};
+const FLT={all:'すべて',after:'アフター',before:'ビフォー'};
 const FN=typeof FONT!=='undefined'?FONT:'"Hiragino Sans",sans-serif';
-const V={dog:'',flt:'all',scr:'',key:'',file:null};
+const Z={dog:'',flt:'all',scr:'',key:'',file:null};
 const M={kind:'xmas',per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],file:null,t:0,dog:''};
 const D={list:[],tags:['お散歩','お出かけ','誕生日'],tagOf:{}};
-const SRC={},IMS={},KEYS={};let ov=null,tok=0;
+const SRC={},IMS={},KEYS={};let ov=null,hv=null,tok=0;
 try{TABS.forEach(t=>{if(t[0]==='history')t[1]='アルバム'})}catch(e){}
 
 /* 保存場所 */
@@ -599,13 +599,15 @@ const ready=aget('data').then(v=>{if(v&&typeof v==='object'){if(Array.isArray(v.
 const saveD=()=>aset('data',D).catch(()=>alert('保存できませんでした'));
 
 const css=document.createElement('style');
-css.textContent='#xatab{display:none!important}main.xr-photo>*:not(#xrec){display:none!important}.xr-dogs{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 12px}.xr-dog{flex:none;width:62px;text-align:center;font-size:12px;color:var(--sub);background:none;border:none;padding:0;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xr-dog i{display:flex;width:56px;height:56px;margin:0 auto 4px;border-radius:50%;overflow:hidden;background:var(--line);align-items:center;justify-content:center;font-size:24px;font-style:normal;border:3px solid #fff;box-shadow:0 0 0 1px #eee}.xr-dog img{width:100%;height:100%;object-fit:cover}.xr-dog.on{color:var(--main);font-weight:bold}.xr-dog.on i{box-shadow:0 0 0 3px var(--main)}.xr-dog.hid{opacity:.5}#xrec .row .btn{margin:0}#xa{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}#xa .savebar{z-index:31}.xa-chips{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;margin:8px 0 4px}.xa-chips .chip{flex:none;white-space:nowrap}.xa-m{font-size:14px;font-weight:bold;margin:18px 0 8px}.xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.xa-t{position:relative;aspect-ratio:1/1;background:var(--line);border-radius:8px;overflow:hidden}.xa-t img{width:100%;height:100%;object-fit:cover;display:block}.xa-t.on{outline:4px solid var(--main);outline-offset:-4px}.xa-lb{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 6px}.xa-ck{position:absolute;top:4px;right:4px;background:var(--main);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}';
+css.textContent='#xatab{display:none!important}main.xr-photo>*:not(#xrec){display:none!important}.xr-dogs{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:8px 6px 12px}.xr-dog{flex:none;width:62px;text-align:center;font-size:12px;color:var(--sub);background:none;border:none;padding:0;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xr-dog i{display:flex;width:56px;height:56px;margin:4px auto 4px;border-radius:50%;overflow:hidden;background:var(--line);align-items:center;justify-content:center;font-size:24px;font-style:normal;border:3px solid #fff;box-shadow:0 0 0 1px #eee}.xr-dog img{width:100%;height:100%;object-fit:cover}.xr-dog.on{color:var(--main);font-weight:bold}.xr-dog.on i{box-shadow:0 0 0 3px var(--main)}#xrec .row .btn{margin:0}#xrec .xh-make{display:block;width:100%;background:none;border:none;color:var(--main);font-size:14px;font-weight:bold;padding:10px 0 0;text-align:center;font-family:inherit}#xa,#xh{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}#xa .savebar{z-index:31}.xa-chips{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;margin:8px 0 4px}.xa-chips .chip{flex:none;white-space:nowrap}.xa-m{font-size:14px;font-weight:bold;margin:18px 0 8px}.xa-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.xa-t{position:relative;aspect-ratio:1/1;background:var(--line);border-radius:8px;overflow:hidden}.xa-t img{width:100%;height:100%;object-fit:cover;display:block}.xa-t.on{outline:4px solid var(--main);outline-offset:-4px}.xa-lb{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border-radius:6px;padding:1px 6px}.xa-ck{position:absolute;top:4px;right:4px;background:var(--main);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}#xacv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}.xh-y{font-size:14px;font-weight:bold;color:var(--sub);margin:20px 0 4px}.xh-y:first-child{margin-top:4px}.xh-c{display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}.xh-ph{width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--line);flex:none}.xh-ph img{width:100%;height:100%;object-fit:cover}#xpick{position:fixed;inset:0;z-index:40}#xpick .xp-bg{position:absolute;inset:0;background:rgba(0,0,0,.4)}#xpick .xp-sh{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 16px)}#xpick .xp-ds{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0}';
 document.head.appendChild(css);
 
 /* 共通 */
 const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const msg=m=>{try{if(typeof toast==='function'){toast(m);return}}catch(e){}alert(m)};
+const hideList=()=>{S.settings=S.settings||{};if(!Array.isArray(S.settings.albumHide))S.settings.albumHide=[];return S.settings.albumHide};
 const dogs=()=>S.dogs||[];
+const vis=()=>dogs().filter(d=>!hideList().includes(d.id));
 const dname=id=>(dogs().find(d=>d.id===id)||{}).name||'';
 const ymd=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const rdate=r=>String(r.date||'').slice(0,10);
@@ -613,35 +615,44 @@ const fmt=d=>{const m=String(d||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return
 function shopName(r){const p=(S.places||[]).find(x=>x.id===r.placeId);return p?(p.name||''):''}
 const season=()=>M.kind==='xmas'||M.kind==='ny';
 const tagsOf=k=>D.tagOf[k]||[];
-const oneDog=()=>V.dog||(dogs().length===1?dogs()[0].id:'');
+const okDog=id=>vis().some(d=>d.id===id);
 
-function items(dogId){const out=[];
-  (S.records||[]).filter(r=>!dogId||r.dogId===dogId).forEach(r=>{const d=rdate(r),sh=shopName(r);
+function items(dogId){const out=[],ok=r=>dogId?r===dogId:okDog(r);
+  (S.records||[]).filter(r=>ok(r.dogId)).forEach(r=>{const d=rdate(r),sh=shopName(r);
     if(r.before)out.push({key:'r'+r.id+'b',src:'rec',rid:r.id,img:r.before,date:d,label:'ビフォー',shop:sh,dog:r.dogId});
     if(r.after)out.push({key:'r'+r.id+'a',src:'rec',rid:r.id,img:r.after,date:d,label:'アフター',shop:sh,dog:r.dogId})});
-  D.list.filter(a=>!dogId||a.dogId===dogId).forEach(a=>out.push({key:'p'+a.id,src:'own',img:a.id,date:a.date||'',label:'',memo:a.memo||'',dog:a.dogId,a}));
+  D.list.filter(a=>ok(a.dogId)).forEach(a=>out.push({key:'p'+a.id,src:'own',img:a.id,date:a.date||'',label:'',memo:a.memo||'',dog:a.dogId,a}));
   out.forEach(it=>KEYS[it.key]=it);
   return out.sort((x,y)=>x.date<y.date?1:x.date>y.date?-1:(x.label==='ビフォー'?1:-1))}
-function flt(L){const f=V.flt;if(f==='after')return L.filter(x=>x.label==='アフター');if(f==='before')return L.filter(x=>x.label==='ビフォー');if(f==='own')return L.filter(x=>x.src==='own');
+function flt(L){const f=Z.flt;if(f==='after')return L.filter(x=>x.label==='アフター');if(f==='before')return L.filter(x=>x.label==='ビフォー');
   if(f.indexOf('t:')===0){const t=f.slice(2);return L.filter(x=>tagsOf(x.key).includes(t))}return L}
 async function srcOf(it){if(SRC[it.key])return SRC[it.key];let s=null;try{s=it.src==='rec'?await getImg(it.img):await aget('img_'+it.img)}catch(e){}if(s&&typeof s!=='string')s=URL.createObjectURL(s);if(s)SRC[it.key]=s;return s}
 async function imOf(it){if(IMS[it.key])return IMS[it.key];const s=await srcOf(it);if(!s)return null;const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});if(im)IMS[it.key]=im;return im}
-async function dogSrc(d){for(const k of ['photo','icon','img','image','pic','avatar']){const v=d[k];if(typeof v==='string'&&v){if(/^(data:|blob:|https?:)/.test(v))return v;try{const s=await getImg(v);if(s)return typeof s==='string'?s:URL.createObjectURL(s)}catch(e){}}}
+async function dogSrc(d){for(const k of ['icon','photo','img','image','pic','avatar']){const v=d[k];if(typeof v==='string'&&v){if(/^(data:|blob:|https?:)/.test(v))return v;try{const s=await getImg(v);if(s)return typeof s==='string'?s:URL.createObjectURL(s)}catch(e){}}}
   const L=items(d.id),it=L.find(x=>x.label==='アフター')||L[0];return it?await srcOf(it):null}
 function shrink(file){return new Promise(res=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{const k=Math.min(1,1600/Math.max(i.naturalWidth,i.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.85))};i.onerror=()=>{URL.revokeObjectURL(u);res(null)};i.src=u})}
 function shareFile(f){if(!f){msg('準備中です。もう一度押してください');return}if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f]}).catch(()=>{});else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}
 const loadImgs=el=>el.querySelectorAll('img[data-k]').forEach(async im=>{const it=KEYS[im.dataset.k];if(!it)return;const s=await srcOf(it);if(s)im.src=s});
 const loadDogs=el=>el.querySelectorAll('img[data-dog]').forEach(async im=>{const d=dogs().find(x=>x.id===im.dataset.dog);const s=d?await dogSrc(d):null;if(s)im.src=s;else im.replaceWith('🐶')});
 
+/* ワンちゃんを選ぶ */
+function pickDog(title,cb){const ds=vis();if(!ds.length){msg('アルバムに表示するワンちゃんがいません');return}
+  if(Z.dog&&okDog(Z.dog))return cb(Z.dog);if(ds.length===1)return cb(ds[0].id);
+  const w=document.createElement('div');w.id='xpick';
+  w.innerHTML='<div class="xp-bg" data-pk="-"></div><div class="xp-sh"><b>'+E(title)+'</b><div class="xp-ds">'+ds.map(d=>'<button class="xr-dog" data-pk="'+E(d.id)+'"><i><img data-dog="'+E(d.id)+'" alt=""></i>'+E(d.name||'名前なし')+'</button>').join('')+'</div><button class="btn sub" data-pk="-">やめる</button></div>';
+  w.addEventListener('click',e=>{const b=e.target.closest('[data-pk]');if(!b)return;const id=b.dataset.pk;w.remove();if(id!=='-')cb(id)});
+  document.body.appendChild(w);loadDogs(w)}
+
 /* アルバムの中 */
-function chips(withNew){const c=(v,t)=>'<button class="chip'+(V.flt===v?' on':'')+'" data-x="flt" data-id="'+E(v)+'">'+E(t)+'</button>';
+function chips(withNew){const c=(v,t)=>'<button class="chip'+(Z.flt===v?' on':'')+'" data-x="flt" data-id="'+E(v)+'">'+E(t)+'</button>';
   return '<div class="xa-chips">'+Object.keys(FLT).map(k=>c(k,FLT[k])).join('')+D.tags.map(t=>c('t:'+t,'#'+t)).join('')+(withNew?'<button class="chip mine" data-x="newtag">＋ タグ</button>':'')+'</div>'}
 function thumbLb(it){if(it.src==='rec')return it.label;const t=tagsOf(it.key)[0];return t?'#'+t:''}
-function dogRow(){const ds=dogs().slice().sort((a,b)=>!!a.hidden-!!b.hidden);if(ds.length<2)return '';
-  const b=(id,name,inner,h)=>'<button class="xr-dog'+(V.dog===id?' on':'')+(h?' hid':'')+'" data-x="dog" data-id="'+E(id)+'"><i>'+inner+'</i>'+E(name)+'</button>';
-  return '<div class="xr-dogs">'+b('','全員','🐾')+ds.map(d=>b(d.id,d.name||'名前なし','<img data-dog="'+E(d.id)+'" alt="">',d.hidden)).join('')+'</div>'}
-function recHtml(){let h=dogRow()+'<div class="row"><button class="btn small sub" data-x="add">＋ 写真を追加</button><button class="btn small" data-x="make">画像を作る</button></div>'+chips(true);
-  const L=flt(items(V.dog));
+function dogRow(){const ds=vis();if(ds.length<2)return '';
+  const b=(id,name,inner)=>'<button class="xr-dog'+(Z.dog===id?' on':'')+'" data-x="dog" data-id="'+E(id)+'"><i>'+inner+'</i>'+E(name)+'</button>';
+  return '<div class="xr-dogs">'+b('','全員','🐾')+ds.map(d=>b(d.id,d.name||'名前なし','<img data-dog="'+E(d.id)+'" alt="">')).join('')+'</div>'}
+function recHtml(){if(Z.dog&&!okDog(Z.dog))Z.dog='';
+  let h=dogRow()+'<div class="row"><button class="btn small" data-x="hist">トリミング履歴</button><button class="btn small sub" data-x="add">＋ 写真を追加</button></div><button class="xh-make" data-x="make">クリスマス・お正月などの画像を作る ›</button>'+chips(true);
+  const L=flt(items(Z.dog));
   if(!L.length)return h+'<p class="muted" style="text-align:center;margin:30px 0">写真がありません</p>';
   let cur=null;L.forEach(it=>{const m=(it.date||'').slice(0,7);if(m!==cur){if(cur!==null)h+='</div>';cur=m;const mm=m.match(/^(\d{4})-(\d{2})/);h+='<div class="xa-m">'+(mm?mm[1]+'年'+Number(mm[2])+'月':'日付なし')+'</div><div class="xa-g">'}
     const lb=thumbLb(it);h+='<div class="xa-t" data-x="open" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'">'+(lb?'<span class="xa-lb">'+E(lb)+'</span>':'')+'</div>'});
@@ -653,9 +664,23 @@ function inject(){rename();if(typeof view==='undefined'||view!=='history')return
   const m=document.querySelector('main');if(!m)return;if(!m.classList.contains('xr-photo'))m.classList.add('xr-photo');
   if(!m.querySelector('#xrec')){const w=document.createElement('div');w.id='xrec';m.insertBefore(w,m.firstChild);refresh()}}
 
+/* トリミング履歴 */
+function menus(r){const m=r.menus||r.menu||r.done||r.items||[];return Array.isArray(m)?m.join('・'):String(m||'')}
+function hCard(r,all){const ph=r.after||r.before,st=(typeof starHtml==='function'&&r.score)?starHtml(r.score):'',mn=menus(r),sh=shopName(r);
+  return '<div class="xh-c" data-x="hrec" data-id="'+E(r.id)+'"><div class="xh-ph">'+(ph?'<img data-img="'+E(ph)+'">':'')+'</div><div style="flex:1;min-width:0"><b>'+E(r.date?String(r.date).replace(/-/g,'/'):'日付なし')+(r.time?' '+E(r.time):'')+'</b>'
+  +(all?'　<span>'+E(dname(r.dogId))+'</span>':'')+(sh?'<div class="muted">'+E(sh)+'</div>':'')+(mn?'<div class="muted">'+E(mn)+'</div>':'')+(st?'<div>'+st+'</div>':'')+'</div><span class="muted" style="font-size:20px">›</span></div>'}
+function openHist(){const dg=Z.dog,all=!dg&&vis().length>1;
+  const L=(S.records||[]).filter(r=>dg?r.dogId===dg:okDog(r.dogId)).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.time||'').localeCompare(String(a.time||'')));
+  let h='<header><button class="back" data-x="hback">‹ 戻る</button><h1>トリミング履歴'+(dg?'（'+E(dname(dg))+'）':'')+'</h1></header><main class="pb">';
+  if(!L.length)h+='<p class="muted" style="text-align:center;margin:40px 0">まだ記録がありません</p>';
+  else{let y=null;L.forEach(r=>{const yy=String(r.date||'').slice(0,4)||'日付なし';if(yy!==y){y=yy;h+='<div class="xh-y">'+E(/^\d{4}$/.test(yy)?yy+'年':yy)+'</div>'}h+=hCard(r,all)});h+='<p class="muted" style="text-align:center">全'+L.length+'回</p>'}
+  h+='</main>';if(!hv){hv=document.createElement('div');hv.id='xh';document.body.appendChild(hv)}hv.innerHTML=h;hv.scrollTop=0;
+  hv.querySelectorAll('img[data-img]').forEach(async im=>{try{const v=await getImg(im.dataset.img);if(v)im.src=typeof v==='string'?v:URL.createObjectURL(v)}catch(e){}})}
+function closeHist(){if(hv)hv.remove();hv=null}
+
 /* 重ねて開く画面 */
 const head=t=>'<header><button class="back" data-x="back">‹ 戻る</button><h1>'+E(t)+'</h1></header>';
-function scrOpen(){const it=KEYS[V.key];if(!it)return '';const my=tagsOf(it.key);
+function scrOpen(){const it=KEYS[Z.key];if(!it)return '';const my=tagsOf(it.key);
   let h=head(fmt(it.date)||'写真')+'<main class="pb"><div class="card"><div class="photo big" style="aspect-ratio:auto"><img data-k="'+E(it.key)+'" style="height:auto"></div></div><div class="card">';
   if(it.src==='rec')h+='<b>トリミング（'+it.label+'）</b><div class="muted" style="margin-top:4px">'+E(dname(it.dog))+(it.shop?'　'+E(it.shop):'')+'</div><button class="btn sub" data-x="rec" style="margin-top:12px">この記録を開く</button>';
   else h+='<b>'+E(dname(it.dog))+'</b><label>日付</label><input type="date" data-x="date" value="'+E(it.date)+'"><label>メモ</label><input type="text" data-x="memo" value="'+E(it.memo)+'" placeholder="お散歩、誕生日など">';
@@ -666,10 +691,10 @@ const mdog=()=>M.dog||'';
 function years(){return[...new Set(items(mdog()).map(x=>(x.date||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse()}
 function per(){return items(mdog()).filter(x=>M.per==='all'||(x.date||'').slice(0,4)===M.per).reverse()}
 function defTitle(){const n=dname(mdog());if(M.kind==='xmas')return'Merry Christmas';if(M.kind==='ny')return'あけましておめでとう';if(M.kind==='grow')return n+'の成長アルバム';return n+'の'+(M.per==='all'?new Date().getFullYear():M.per)+'年'}
-function defSel(){let L=flt(per());if(V.flt==='all')L=L.filter(x=>x.label!=='ビフォー');const n=L.length;M.sel=[];if(!n)return;if(season()){M.sel=[L[n-1].key];return}
+function defSel(){let L=flt(per());if(Z.flt==='all')L=L.filter(x=>x.label!=='ビフォー');const n=L.length;M.sel=[];if(!n)return;if(season()){M.sel=[L[n-1].key];return}
   const m=Math.min(9,n);for(let i=0;i<m;i++){const j=m===1?n-1:Math.round(i*(n-1)/(m-1));if(!M.sel.includes(L[j].key))M.sel.push(L[j].key)}}
 function scrMake(){const yrs=years(),P=flt(per()),opt=(o,v)=>Object.keys(o).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+E(Array.isArray(o[k])?o[k][0]:o[k])+'</option>').join('');
-  return head('画像を作る')+'<main class="pb"><div class="card"><canvas id="xacv"></canvas></div><div class="card">'
+  return head('画像を作る（'+dname(mdog())+'）')+'<main class="pb"><div class="card"><canvas id="xacv"></canvas></div><div class="card">'
   +'<label>作るもの</label><select data-x="mset" data-k="kind">'+opt(KINDS,M.kind)+'</select>'
   +'<label>期間</label><select data-x="mset" data-k="per"><option value="all">すべて</option>'+yrs.map(y=>'<option value="'+y+'"'+(y===M.per?' selected':'')+'>'+y+'年</option>').join('')+'</select>'
   +'<label>形</label><select data-x="mset" data-k="shape">'+opt(SHAPES,M.shape)+'</select>'
@@ -678,9 +703,9 @@ function scrMake(){const yrs=years(),P=flt(per()),opt=(o,v)=>Object.keys(o).map(
   +'<div class="card"><label>使う写真（'+(season()?'1枚えらぶ':'9枚まで・日付の古い順に並びます')+'）</label>'+chips(false)
   +(P.length?'<div class="xa-g">'+P.map(it=>{const on=M.sel.includes(it.key);return '<div class="xa-t'+(on?' on':'')+'" data-x="pick" data-id="'+E(it.key)+'"><img data-k="'+E(it.key)+'"><span class="xa-lb">'+E(fmt(it.date))+'</span>'+(on?'<b class="xa-ck">✓</b>':'')+'</div>'}).join('')+'</div>':'<p class="muted">写真がありません</p>')
   +'</div></main><div class="savebar"><button class="btn" data-x="mshare">画像を共有・保存</button></div>'}
-function showOv(){if(!ov){ov=document.createElement('div');ov.id='xa';document.body.appendChild(ov)}const y=ov.dataset.s===V.scr?ov.scrollTop:0;ov.dataset.s=V.scr;
-  ov.innerHTML=({open:scrOpen,make:scrMake,tags:scrTags}[V.scr]||(()=>''))();ov.scrollTop=y;loadImgs(ov);if(V.scr==='make')draw();if(V.scr==='open')prep1()}
-function closeOv(){if(ov)ov.remove();ov=null;V.scr='';refresh()}
+function showOv(){if(!ov){ov=document.createElement('div');ov.id='xa';document.body.appendChild(ov)}const y=ov.dataset.s===Z.scr?ov.scrollTop:0;ov.dataset.s=Z.scr;
+  ov.innerHTML=({open:scrOpen,make:scrMake,tags:scrTags}[Z.scr]||(()=>''))();ov.scrollTop=y;loadImgs(ov);if(Z.scr==='make')draw();if(Z.scr==='open')prep1()}
+function closeOv(){if(ov)ov.remove();ov=null;Z.scr='';refresh()}
 
 /* 描画 */
 function rr(c,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
@@ -734,80 +759,71 @@ async function draw(){const my=++tok;const cv=ov&&ov.querySelector('#xacv');if(!
   M.file=null;cv.toBlob(b=>{if(my===tok&&b)M.file=new File([b],'trimlog-'+M.kind+'.jpg',{type:'image/jpeg'})},'image/jpeg',0.92)}
 
 /* 動き */
-async function prep1(){V.file=null;const it=KEYS[V.key];if(!it)return;const s=await srcOf(it);if(!s)return;try{const b=await(await fetch(s)).blob();V.file=new File([b],'trimlog-photo.jpg',{type:b.type||'image/jpeg'})}catch(e){}}
+async function prep1(){Z.file=null;const it=KEYS[Z.key];if(!it)return;const s=await srcOf(it);if(!s)return;try{const b=await(await fetch(s)).blob();Z.file=new File([b],'trimlog-photo.jpg',{type:b.type||'image/jpeg'})}catch(e){}}
 function marks(){ov.querySelectorAll('.xa-t[data-x="pick"]').forEach(el=>{const on=M.sel.includes(el.dataset.id);el.classList.toggle('on',on);let b=el.querySelector('.xa-ck');if(on&&!b){b=document.createElement('b');b.className='xa-ck';b.textContent='✓';el.appendChild(b)}if(!on&&b)b.remove()})}
-function add(){const dg=oneDog();if(!dg){msg('上でワンちゃんを選んでから追加してください');return}
-  const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.style.display='none';document.body.appendChild(f);
-  f.onchange=async()=>{const fs=[...f.files];f.remove();if(!fs.length)return;let n=0;const tg=V.flt.indexOf('t:')===0?V.flt.slice(2):'';
+function doAdd(dg){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.style.display='none';document.body.appendChild(f);
+  f.onchange=async()=>{const fs=[...f.files];f.remove();if(!fs.length)return;let n=0;const tg=Z.flt.indexOf('t:')===0?Z.flt.slice(2):'';
     for(const file of fs){const s=await shrink(file);if(!s)continue;const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
       try{await aset('img_'+id,s)}catch(e){alert('保存できませんでした');break}D.list.push({id,dogId:dg,date:ymd(file.lastModified||Date.now()),memo:''});if(tg)D.tagOf['p'+id]=[tg];n++}
-    await saveD();if(n)msg(n+'枚追加しました');if(!tg)V.flt='all';refresh()};f.click()}
-async function del(){const it=KEYS[V.key];if(!it||!it.a||!confirm('この写真を消しますか？'))return;D.list=D.list.filter(a=>a.id!==it.a.id);delete D.tagOf[it.key];await saveD();try{await aset('img_'+it.a.id,undefined)}catch(e){}delete SRC[it.key];delete IMS[it.key];delete KEYS[it.key];closeOv()}
+    await saveD();if(n)msg(dname(dg)+'に'+n+'枚追加しました');if(!tg)Z.flt='all';refresh()};f.click()}
+async function del(){const it=KEYS[Z.key];if(!it||!it.a||!confirm('この写真を消しますか？'))return;D.list=D.list.filter(a=>a.id!==it.a.id);delete D.tagOf[it.key];await saveD();try{await aset('img_'+it.a.id,undefined)}catch(e){}delete SRC[it.key];delete IMS[it.key];delete KEYS[it.key];closeOv()}
 function newTag(){let t=prompt('タグの名前を入れてください（例：お散歩）');if(t==null)return;t=t.trim().replace(/^[#＃]+/,'');if(!t)return;
-  if(!D.tags.includes(t))D.tags.push(t);if(V.scr==='open'){const a=D.tagOf[V.key]=D.tagOf[V.key]||[];if(!a.includes(t))a.push(t)}saveD();if(ov)showOv();else refresh()}
-function togTag(t){const a=D.tagOf[V.key]=tagsOf(V.key).slice(),i=a.indexOf(t);if(i>=0)a.splice(i,1);else a.push(t);if(!a.length)delete D.tagOf[V.key];saveD();showOv()}
-function delTag(t){if(!confirm('「#'+t+'」を消しますか？（写真は消えません）'))return;D.tags=D.tags.filter(x=>x!==t);Object.keys(D.tagOf).forEach(k=>{D.tagOf[k]=D.tagOf[k].filter(x=>x!==t);if(!D.tagOf[k].length)delete D.tagOf[k]});if(V.flt==='t:'+t)V.flt='all';saveD();showOv()}
-function make(){const dg=oneDog();if(!dg){msg('上でワンちゃんを選んでから作ってください');return}M.dog=dg;M.per='all';M.edited=false;M.title=defTitle();defSel();V.scr='make';showOv()}
+  if(!D.tags.includes(t))D.tags.push(t);if(Z.scr==='open'){const a=D.tagOf[Z.key]=D.tagOf[Z.key]||[];if(!a.includes(t))a.push(t)}saveD();if(ov)showOv();else refresh()}
+function togTag(t){const a=D.tagOf[Z.key]=tagsOf(Z.key).slice(),i=a.indexOf(t);if(i>=0)a.splice(i,1);else a.push(t);if(!a.length)delete D.tagOf[Z.key];saveD();showOv()}
+function delTag(t){if(!confirm('「#'+t+'」を消しますか？（写真は消えません）'))return;D.tags=D.tags.filter(x=>x!==t);Object.keys(D.tagOf).forEach(k=>{D.tagOf[k]=D.tagOf[k].filter(x=>x!==t);if(!D.tagOf[k].length)delete D.tagOf[k]});if(Z.flt==='t:'+t)Z.flt='all';saveD();showOv()}
+function doMake(dg){M.dog=dg;M.per='all';M.edited=false;M.title=defTitle();defSel();Z.scr='make';showOv()}
 function pick(k){if(season())M.sel=[k];else{const i=M.sel.indexOf(k);if(i>=0)M.sel.splice(i,1);else{if(M.sel.length>=9){msg('写真は9枚までです');return}M.sel.push(k)}}marks();draw()}
 function mshare(){if(!M.sel.length){msg('写真をえらんでください');return}
-  const tags=(M.kind==='xmas'?'#クリスマス ':M.kind==='ny'?'#年賀状 #お正月 ':'#成長記録 ')+'#犬のいる暮らし '+(typeof APP_TAG!=='undefined'?APP_TAG:'#トリミングログ');
+  const tags=(M.kind==='xmas'?['#クリスマス']:M.kind==='ny'?['#年賀状','#お正月']:['#成長記録']).concat(['#犬のいる暮らし',typeof APP_TAG!=='undefined'?APP_TAG:'#トリミングログ']).join('\n');
   try{navigator.clipboard.writeText(tags).catch(()=>{})}catch(e){}shareFile(M.file)}
-document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-x]');if(!t||!t.closest('#xrec,#xa'))return;e.preventDefault();e.stopPropagation();
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-x]');if(!t||!t.closest('#xrec,#xa,#xh'))return;e.preventDefault();e.stopPropagation();
   const a=t.dataset.x,id=t.dataset.id;
-  if(a==='dog'){V.dog=id;return refresh()}
-  if(a==='flt'){V.flt=id;if(V.scr==='make'){defSel();return showOv()}return refresh()}
-  if(a==='open'){V.key=id;V.scr='open';return showOv()}
-  if(a==='tags'){V.scr='tags';return showOv()}
+  if(a==='dog'){Z.dog=id;return refresh()}
+  if(a==='flt'){Z.flt=id;if(Z.scr==='make'){defSel();return showOv()}return refresh()}
+  if(a==='open'){Z.key=id;Z.scr='open';return showOv()}
+  if(a==='tags'){Z.scr='tags';return showOv()}
   if(a==='back')return closeOv();
-  if(a==='rec'){const it=KEYS[V.key];closeOv();if(it&&typeof go==='function')go('rec',it.rid);return}
+  if(a==='hist')return openHist();if(a==='hback')return closeHist();
+  if(a==='hrec'){closeHist();if(typeof go==='function')go('rec',id);return}
+  if(a==='rec'){const it=KEYS[Z.key];closeOv();if(it&&typeof go==='function')go('rec',it.rid);return}
   if(a==='color'){M.style=Number(id)||0;ov.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on',b===t));return draw()}
-  if(a==='add')return add();if(a==='make')return make();if(a==='pick')return pick(id);
+  if(a==='add')return pickDog('どの子の写真を追加しますか？',doAdd);
+  if(a==='make')return pickDog('どの子の画像を作りますか？',doMake);
+  if(a==='pick')return pick(id);
   if(a==='newtag')return newTag();if(a==='tog')return togTag(id);if(a==='deltag')return delTag(id);
-  if(a==='share1')return shareFile(V.file);if(a==='del')return del();if(a==='mshare')return mshare()},true);
+  if(a==='share1')return shareFile(Z.file);if(a==='del')return del();if(a==='mshare')return mshare()},true);
 document.addEventListener('change',e=>{const t=e.target;if(!t.closest||!t.closest('#xa'))return;const a=t.dataset&&t.dataset.x;if(!a)return;
-  if(a==='date'||a==='memo'){const it=KEYS[V.key];if(!it||!it.a)return;it.a[a]=t.value;it[a]=t.value;saveD();return}
+  if(a==='date'||a==='memo'){const it=KEYS[Z.key];if(!it||!it.a)return;it.a[a]=t.value;it[a]=t.value;saveD();return}
   if(a==='mset'){const k=t.dataset.k,v=t.value;if(k==='shape'){M.shape=v;return draw()}
     M[k]=v;if(k==='kind'){M.edited=false;if(v==='year'&&M.per==='all'){const y=years()[0];if(y)M.per=y}}if(!M.edited)M.title=defTitle();defSel();showOv()}});
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.x==='mtitle'&&t.closest('#xa')){M.title=t.value;M.edited=true;clearTimeout(M.t);M.t=setTimeout(draw,150)}});
-document.addEventListener('click',e=>{if(ov&&e.target.closest&&e.target.closest('.tabbar button')){ov.remove();ov=null;V.scr=''}},true);
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.tabbar button')){if(ov){ov.remove();ov=null;Z.scr=''}closeHist()}},true);
+
+/* ワンちゃんの編集画面：表示する場所を選ぶ */
+function fixEdit(){if(document.getElementById('xalh'))return;
+  const L=[...document.querySelectorAll('main label')].find(l=>/ホームや選択肢に表示しない|ホームに表示しない/.test(l.textContent));if(!L)return;
+  const id=typeof param!=='undefined'?param:'';if(!dogs().some(d=>d.id===id))return;
+  const w=document.createTreeWalker(L,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())n.nodeValue=n.nodeValue.replace('ホームや選択肢に表示しない','ホームに表示しない（予約や記録のワンちゃん選びにも出なくなります）');
+  const b=document.createElement('label');b.id='xalh';b.className=L.className;b.style.cssText=(L.getAttribute('style')||'')+';margin-top:10px';
+  b.innerHTML='<input type="checkbox"'+(hideList().includes(id)?' checked':'')+'> アルバムに表示しない';
+  b.querySelector('input').addEventListener('change',e=>{const h=hideList(),i=h.indexOf(id);if(e.target.checked&&i<0)h.push(id);if(!e.target.checked&&i>=0)h.splice(i,1);save()});
+  L.after(b)}
 
 ready.then(()=>{refresh();try{inject()}catch(e){}});
-new MutationObserver(()=>{try{inject()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{inject()}catch(e){}
+new MutationObserver(()=>{try{inject();fixEdit()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{inject();fixEdit()}catch(e){}
 })();
-/* ===== アルバム（記録タブ）ここまで ===== */
-/* ===== 追加：アルバムにトリミング履歴 ===== */
-(function(){
-const css=document.createElement('style');
-css.textContent='#xrec .chip[data-id="own"]{display:none!important}#xh{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}.xh-y{font-size:14px;font-weight:bold;color:var(--sub);margin:20px 0 4px}.xh-y:first-child{margin-top:4px}.xh-c{display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}.xh-ph{width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--line);flex:none}.xh-ph img{width:100%;height:100%;object-fit:cover}#xrec .xh-make{display:block;width:100%;background:none;border:none;color:var(--main);font-size:14px;font-weight:bold;padding:10px 0 0;text-align:center;font-family:inherit}';
-document.head.appendChild(css);
-const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let ov=null;
-const selDog=()=>{const b=document.querySelector('#xrec .xr-dog.on');return b?b.dataset.id:''};
-const dn=id=>((S.dogs||[]).find(d=>d.id===id)||{}).name||'';
-const pn=id=>{const p=(S.places||[]).find(x=>x.id===id);return p?p.name||'':''};
-const fd=s=>s?String(s).replace(/-/g,'/'):'日付なし';
-function menus(r){const m=r.menus||r.menu||r.done||r.items||[];return Array.isArray(m)?m.join('・'):String(m||'')}
-function card(r,all){const ph=r.after||r.before,st=(typeof starHtml==='function'&&r.score)?starHtml(r.score):'',mn=menus(r),sh=pn(r.placeId);
-  return '<div class="xh-c" data-h="rec" data-id="'+E(r.id)+'"><div class="xh-ph">'+(ph?'<img data-img="'+E(ph)+'">':'')+'</div><div style="flex:1;min-width:0"><b>'+E(fd(r.date))+(r.time?' '+E(r.time):'')+'</b>'
-  +(all?'　<span>'+E(dn(r.dogId))+'</span>':'')+(sh?'<div class="muted">'+E(sh)+'</div>':'')+(mn?'<div class="muted">'+E(mn)+'</div>':'')+(st?'<div>'+st+'</div>':'')+'</div><span class="muted" style="font-size:20px">›</span></div>'}
-function open(){const dg=selDog(),all=!dg&&(S.dogs||[]).length>1;
-  const L=(S.records||[]).filter(r=>!dg||r.dogId===dg).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.time||'').localeCompare(String(a.time||'')));
-  let h='<header><button class="back" data-h="back">‹ 戻る</button><h1>トリミング履歴'+(dg?'（'+E(dn(dg))+'）':'')+'</h1></header><main class="pb">';
-  if(!L.length)h+='<p class="muted" style="text-align:center;margin:40px 0">まだ記録がありません</p>';
-  else{let y=null;L.forEach(r=>{const yy=String(r.date||'').slice(0,4)||'日付なし';if(yy!==y){y=yy;h+='<div class="xh-y">'+E(/^\d{4}$/.test(yy)?yy+'年':yy)+'</div>'}h+=card(r,all)});
-    h+='<p class="muted" style="text-align:center">全'+L.length+'回</p>'}
-  h+='</main>';if(!ov){ov=document.createElement('div');ov.id='xh';document.body.appendChild(ov)}ov.innerHTML=h;ov.scrollTop=0;
-  ov.querySelectorAll('img[data-img]').forEach(async im=>{try{const v=await getImg(im.dataset.img);if(v)im.src=typeof v==='string'?v:URL.createObjectURL(v)}catch(e){}})}
-function close(){if(ov)ov.remove();ov=null}
-function fix(){const w=document.getElementById('xrec');if(!w)return;
-  const b=w.querySelector('.row .btn[data-x="make"]');if(b){b.dataset.x='hist';b.textContent='トリミング履歴'}
-  if(!w.querySelector('.xh-make')){const row=w.querySelector('.row');if(row){const l=document.createElement('button');l.className='xh-make';l.dataset.x='make';l.textContent='クリスマス・お正月などの画像を作る ›';row.after(l)}}}
-document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-x="hist"],[data-h]');
-  if(!t){if(ov&&e.target.closest&&e.target.closest('.tabbar button'))close();return}
-  e.preventDefault();e.stopPropagation();
-  if(t.dataset.x==='hist')return open();
-  const a=t.dataset.h;if(a==='back')return close();
-  if(a==='rec'){const id=t.dataset.id;close();if(typeof go==='function')go('rec',id)}},true);
-new MutationObserver(()=>{try{fix()}catch(e){}}).observe(document.body,{childList:true,subtree:true});try{fix()}catch(e){}
-})();
-/* ===== トリミング履歴ここまで ===== */
+
+/* ハッシュタグを1つずつ改行してコピー */
+(function(){const c=navigator.clipboard;if(!c||!c.writeText||c.__xw)return;const o=c.writeText.bind(c);
+  c.writeText=t=>{if(typeof t==='string'&&/^\s*[#＃]\S+(\s+[#＃]\S+)*\s*$/.test(t))t=t.trim().split(/\s+/).join('\n');return o(t)};c.__xw=1})();
+
+/* シンプルでも文字を編集できるように */
+(function(){if(typeof V==='undefined'||!V.xpost||V.xpost.__w)return;
+  const MK='<p class="muted" style="margin-top:0">「写真だけ」では、タイトルとひとことは出ません。</p>',LB='<div class="xl">ラベル</div>';
+  function block(id){const r=recOf(id);if(!r)return '';const p=r.xp||{},ph=((S.settings||{}).tpPhrases||[]).map((t,i)=>'<span class="chip mine" onclick="xpPhrase('+i+')">'+esc(t)+'<button class="xx" onclick="event.stopPropagation();xpPhraseDel('+i+')">✕</button></span>').join('');
+    return '<div class="xl">タイトル（空欄なら出ません）</div><input id="xt_title" value="'+esc(p.title||'')+'" oninput="xpTxt(\'title\',this.value)" placeholder="例：モカ　2026/11/23"><div><span class="chip" onclick="xpIns(\'n\')">名前</span><span class="chip" onclick="xpIns(\'d\')">日付</span><span class="chip" onclick="xpIns(\'nd\')">名前と日付</span></div><div class="xl">ひとこと（空欄なら出ません）</div><input id="xt_sub" value="'+esc(p.sub||'')+'" oninput="xpTxt(\'sub\',this.value)" placeholder="例：さっぱりしました"><div>'+ph+'</div><button class="link" onclick="xpPhraseAdd()">＋ いまのひとことをテンプレートに保存</button>'}
+  const o=V.xpost;V.xpost=function(id){let h=o.apply(this,arguments);if(typeof h!=='string')return h;
+    if(h.includes(MK))h=h.replace(MK,block(id));
+    if(h.includes(LB)&&!h.includes('xpClr'))h=h.replace(LB,'<button class="link danger" onclick="xpClr()">タイトルとひとことを全部消す</button>'+LB);return h};V.xpost.__w=1;
+  window.xpClr=()=>{const r=recOf(param);if(!r)return;const p=r.xp=r.xp||{};p.title='';p.sub='';save();render()}})();
+/* ===== アルバム2ここまで ===== */
