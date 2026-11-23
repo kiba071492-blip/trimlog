@@ -482,3 +482,42 @@ const run=()=>{try{btns()}catch(e){}try{shop()}catch(e){}};
 new MutationObserver(run).observe(document.body,{childList:true,subtree:true});run();
 })();
 /* ===== LINE・地図ここまで ===== */
+/* ===== 追加：ホームにお店 ===== */
+(function(){
+const q=(s,r)=>[...(r||document).querySelectorAll(s)];
+const ex=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const X=()=>(S.settings&&S.settings.shopX)||{};
+const mapUrl=a=>'https://maps.apple.com/?q='+encodeURIComponent(a);
+function lineUrl(v){v=String(v||'').trim();if(!v)return'';if(/^https?:\/\//.test(v))return v;if(v[0]!=='@')v='@'+v;return 'https://line.me/R/oaMessage/'+encodeURIComponent(v)+'/'}
+const byText=t=>q('button,a,div,span,li').filter(e=>e.textContent.trim()===t);
+function openSet(cb){const tab=q('button,a,div').filter(e=>e.textContent.trim()==='設定'&&e.children.length===0).pop();if(!tab)return;tab.click();setTimeout(cb,350)}
+function clickName(name,step){
+  const hit=q('[onclick]').find(e=>e.textContent.includes(name)&&!e.closest('#xshops')&&e.textContent.length<name.length+60);
+  if(hit){hit.click();return}
+  if(step<2){const m=q('button,a,[onclick]').find(e=>/お店/.test(e.textContent)&&e.textContent.length<30&&!e.closest('#xshops'));if(m){m.click();setTimeout(()=>clickName(name,step+1),350);return}}
+  toast('設定の「お店」から開いてください')}
+window.xShopOpen=i=>{const p=shops()[i];if(!p)return;openSet(()=>clickName(p.name,0))};
+window.xShopAdd=()=>openSet(()=>{const b=q('button,a,[onclick]').find(e=>/お店を追加|お店の登録|お店/.test(e.textContent)&&e.textContent.length<30);if(b)b.click()});
+const shops=()=>(S.places||[]).filter(p=>p&&p.id!=='home'&&p.name&&!p.hidden);
+function render(){
+  const add=q('button,a').find(b=>b.textContent.replace(/\s/g,'')==='＋ワンちゃんを追加'||b.textContent.replace(/\s/g,'')==='+ワンちゃんを追加');
+  const old=document.getElementById('xshops');
+  if(!add){if(old)old.remove();return}
+  const list=shops(),sig=JSON.stringify(list.map(p=>[p.name,p.tel,X()[p.name]]));
+  if(old&&old.dataset.sig===sig)return;if(old)old.remove();
+  const w=document.createElement('div');w.id='xshops';w.dataset.sig=sig;
+  let h='<div class="sec">お店</div>';
+  list.forEach((p,i)=>{const x=X()[p.name]||{},addr=x.addr||p.addr||'',memo=x.memo||p.xmemo||'';
+    h+=`<div class="card" onclick="xShopOpen(${i})" style="cursor:pointer"><div style="display:flex;align-items:center;gap:8px">
+<div style="flex:1;min-width:0"><div style="font-weight:bold;font-size:16px">${ex(p.name)}</div>${addr?`<div class="muted" style="margin-top:2px">${ex(addr)}</div>`:''}${memo?`<div class="muted" style="margin-top:2px">${ex(memo)}</div>`:''}</div>
+<span style="color:#bbb">›</span></div><div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+${p.tel?`<a class="minicall" href="tel:${ex(String(p.tel).replace(/[^\d+]/g,''))}" onclick="event.stopPropagation()">電話</a>`:''}
+${x.line?`<a class="minicall" href="${ex(lineUrl(x.line))}" onclick="event.stopPropagation()">LINE</a>`:''}
+${addr?`<a class="minicall" href="${ex(mapUrl(addr))}" onclick="event.stopPropagation()">地図</a>`:''}</div></div>`});
+  if(!list.length)h+='<p class="muted">行ったお店を登録すると、ここから電話やLINEができます。</p>';
+  h+='<button class="btn sub" onclick="xShopAdd()">＋ お店を追加</button>';
+  w.innerHTML=h;add.after(w)}
+new MutationObserver(()=>{try{render()}catch(e){}}).observe(document.body,{childList:true,subtree:true});
+try{render()}catch(e){}
+})();
+/* ===== ホームにお店ここまで ===== */
