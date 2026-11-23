@@ -58,7 +58,7 @@ function pill(ctx,text,x,y,st,f){const fs=Math.round(40*f);ctx.font='bold '+fs+'
   ctx.fillStyle=st.label;rr(ctx,x,y,w,h,h/2);ctx.fill();ctx.fillStyle=st.labelText;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,x+fs*0.6,y+h/2)}
 /* テンプレート */
   function frame(ctx,c,p,W,H,A,f){const st=STYLES[c.style]||STYLES[0],feed=c.dest!=='reel';ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
-    if(c.tpl==='none')return{st,L:A.x0,R:A.x1,top:A.y0,bottom:A.y1-50,gap:20,rad:16,fr:false,foot:()=>mark(ctx,st,A.x1,A.y1-22)};
+  if(c.tpl==='none')return{st,L:A.x0,R:A.x1,top:A.y0,bottom:A.y1-50,gap:20,rad:16,fr:false,foot:()=>mark(ctx,st,A.x1,A.y1-22)};
   const pad=24,L=A.x0+pad,R=A.x1-pad;
   if(c.tpl==='chihuahua'){
     ctx.save();ctx.globalAlpha=.12;for(let i=0;i<16;i++)paw(ctx,(i*397+80)%W,(i*613+150)%H,26,st.label,((i*53)%360)*Math.PI/180);ctx.restore();
