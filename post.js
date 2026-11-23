@@ -1,8 +1,8 @@
 /* ===== トリミングログ post.js ① 投稿画像 ===== */
 (function(){
-const TPL={chihuahua:'チワワ',simple:'シンプル',none:'写真だけ'};
-const DEST={reel:'縦長（9:16）',feed:'少し縦長（4:5）',wide:'横長（16:9）'};
-const SZ={reel:[1080,1920,[200,50,290,50]],feed:[1080,1350,[40,40,40,40]],wide:[1600,900,[30,30,30,30]]};
+const TPL={chihuahua:'チワワ',none:'シンプル'};
+const DEST={reel:'縦長（9:16）',feed:'少し縦長（4:5）',wide:'横長（4:3）'};
+const SZ={reel:[1080,1920,[200,50,290,50]],feed:[1080,1350,[40,40,40,40]],wide:[1440,1080,[30,30,30,30]]};
 const LAYS={h:'ビフォー・アフターを横に並べる',v:'ビフォー・アフターを縦に並べる',sep:'ビフォーとアフターを別々に2枚',after:'アフターだけ'};
 const FITS={cover:'枠いっぱいに大きく',contain:'写真を切らずに全部'};
 const TS={s:['小',0.8],m:['中',1],l:['大',1.25]};
@@ -56,10 +56,9 @@ function chi(ctx,cx,cy,s){const d=DOGS[cfg().dog]||DOGS[0];ctx.save();
 function mark(ctx,st,xr,y){ctx.save();ctx.globalAlpha=.6;ctx.fillStyle=st.text;ctx.font='bold 30px '+FONT;ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(APP_NAME,xr,y);ctx.restore()}
 function pill(ctx,text,x,y,st,f){const fs=Math.round(40*f);ctx.font='bold '+fs+'px '+FONT;const w=ctx.measureText(text).width+fs*1.2,h=fs*1.6;
   ctx.fillStyle=st.label;rr(ctx,x,y,w,h,h/2);ctx.fill();ctx.fillStyle=st.labelText;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,x+fs*0.6,y+h/2)}
-
 /* テンプレート */
   function frame(ctx,c,p,W,H,A,f){const st=STYLES[c.style]||STYLES[0],feed=c.dest!=='reel';ctx.fillStyle=st.bg;ctx.fillRect(0,0,W,H);
-  if(c.tpl==='none')return{st,L:A.x0,R:A.x1,top:A.y0,bottom:A.y1,gap:20,rad:16,fr:false,foot:()=>{}};
+    if(c.tpl==='none')return{st,L:A.x0,R:A.x1,top:A.y0,bottom:A.y1-50,gap:20,rad:16,fr:false,foot:()=>mark(ctx,st,A.x1,A.y1-22)};
   const pad=24,L=A.x0+pad,R=A.x1-pad;
   if(c.tpl==='chihuahua'){
     ctx.save();ctx.globalAlpha=.12;for(let i=0;i<16;i++)paw(ctx,(i*397+80)%W,(i*613+150)%H,26,st.label,((i*53)%360)*Math.PI/180);ctx.restore();
