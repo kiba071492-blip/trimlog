@@ -130,7 +130,7 @@ const DEF_PHRASES=['さっぱりしました','今月もかわいくしてもら
 const FONT='-apple-system,"Hiragino Sans",sans-serif';
 const WD='日月火水木金土';
 const DAY=86400000;
-const TABS=[['home','ホーム'],['history','アルバム'],['settings','設定']];
+const TABS=[['home','ホーム'],['history','アルバム'],['favs','お気に入り'],['settings','設定']];
 const TAB_IDS=TABS.map(t=>t[0]);
 
 /* ===== 共通の部品 ===== */
@@ -196,6 +196,12 @@ const normTags=s=>[...new Set(String(s).split(/[\s,、　]+/).filter(Boolean).ma
 const tagsOf=p=>!p?[]:Array.isArray(p.tags)?p.tags:normTags(p.tags||'');
 const shopTag=p=>!p||p.id==='home'?null:'#'+String(p.name||'').replace(/[\s　#＃]+/g,'');
 const placeOpts=cur=>S.places.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${esc(p.name)}</option>`).join('');
+/* 「カット＋シャンプー、顔まわり短め」→ 選択式のメニューと自由入力に分ける */
+const menuParts=v=>{const ps=String(v||'').split(/[+＋・、,，\/／\s　]+/).filter(Boolean);
+  return{sel:ps.filter(p=>MENUS.includes(p)),other:ps.filter(p=>!MENUS.includes(p)).join('、')}};
+const menuChips=(cls,sel)=>MENUS.map(m=>`<span class="chip ${cls} ${sel.includes(m)?'on':''}" data-m="${esc(m)}" onclick="this.classList.toggle('on')">${esc(m)}</span>`).join('');
+const readMenu=(cls,otherId)=>{const o=$(('#'+otherId));
+  return [...qa('.'+cls+'.on').map(e=>e.dataset.m),...(o?o.value.split(/[、,，\s　]+/).filter(Boolean):[])].join('＋')};
 
 /* ===== お店の追加情報（住所・LINE・メモ：S.settings.shopX に店名で保存） ===== */
 const shopX=()=>{const s=set();return s.shopX=s.shopX||{}};
@@ -287,17 +293,16 @@ V.home=()=>{
 <div class="sec">ワンちゃん</div>${dogs}<button class="btn sub" onclick="go('dogEdit')">＋ ワンちゃんを追加</button>${homeShops()}${installHint()}`)};
 
 /* ===== 一覧のカード ===== */
-const recCard=r=>`<div class="card list-item" onclick="go('rec','${r.id}')"><div class="photo">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b>${esc(visitStr(r))}</b>${r.score?`<div>${starHtml(r.score)}</div>`:''}<div class="muted">${S.dogs.length>1?esc(dog(r.dogId)?.name||'')+'・':''}${esc((place(r.placeId)||{}).name||'')}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><span class="muted">›</span></div>`;
+const recCard=r=>`<div class="card list-item" onclick="go('rec','${r.id}')"><div class="photo">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1"><b>${esc(visitStr(r))}</b><div class="muted">${S.dogs.length>1?esc(dog(r.dogId)?.name||'')+'・':''}${esc((place(r.placeId)||{}).name||'')}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><button class="xstar" onclick="event.stopPropagation();xFav('${r.id}')">${favOfRec(r)?'★':'☆'}</button></div>`;
 const favCard=f=>`<div class="card list-item" onclick="go('xfav','${f.id}')"><div class="photo">${f.img?`<img data-img="${f.img}">`:''}</div><div style="flex:1"><b>${esc(f.name)}</b><div class="muted">${esc(dog(f.dogId)?.name||'')}${f.memo?'・'+esc(f.memo.slice(0,30)):''}</div></div><span class="muted">›</span></div>`;
 
 /* ===== ワンちゃんのページ ===== */
 const histRow=r=>{const p=place(r.placeId)||{},on=!!favOfRec(r);
   return `<div class="card list-item"><div class="photo" onclick="go('rec','${r.id}')">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1" onclick="go('rec','${r.id}')"><b>${esc(visitStr(r))}</b><div class="muted">${esc(p.name||'')}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><button class="xstar" onclick="xFav('${r.id}')">${on?'★':'☆'}</button></div>`};
 V.xdog=id=>{const d=dog(id);if(!d)return shell('ワンちゃん','<p class="muted">見つかりません。</p>',{back:1});
-  const favs=S.favs.filter(f=>f.dogId===id),recs=recsOf(id);
+  const recs=recsOf(id);
   return shell(d.name,`<div class="sec">次回の予約</div><div class="card">${resBox(upcoming().filter(x=>x.dogId===id),id)}</div>
 <div class="card list-item" style="margin-top:18px">${dogPic(d,64)}<div style="flex:1"><b style="font-size:18px">${esc(d.name)}</b>${d.breed?`<div class="muted">${esc(d.breed)}</div>`:''}</div><button class="xedit" onclick="go('dogEdit','${id}')">編集</button></div>
-<div class="sec">お気に入り</div>${favs.map(favCard).join('')||'<p class="muted">履歴の☆を押すと、ここに入ります。</p>'}
 <div class="sec">履歴</div>${recs.map(histRow).join('')||'<p class="muted">まだ記録がありません。</p>'}`,{back:1})};
 async function xFav(id){const r=recOf(id);if(!r)return;const f=favOfRec(r);
   if(f){if(!confirm('お気に入りから外しますか？'))return;S.favs=S.favs.filter(x=>x!==f);if(f.img)await delImg(f.img);await save();render();return toast('お気に入りから外しました')}
@@ -436,13 +441,13 @@ function newRes(dogId){dogId=dogId||firstDog();
   const ok=fillRes();go('resEdit');if(ok)toast('前回と同じお店・内容を入れました')}
 function resDog(v){syncR();R.dogId=v;if(R._new&&fillRes()){render();toast('前回と同じお店・内容を入れました')}}
 function editRes(id){const x=resOf(id);if(!x)return;R=clone(x);R.rem=validRems(R.rem);go('resEdit')}
-function syncR(){if(!$('#r_at'))return;R.dogId=$('#r_dog').value;R.placeId=$('#r_place').value;R.at=$('#r_at').value;R.menu=$('#r_menu').value.trim();R.rem=readRems()}
+function syncR(){if(!$('#r_at'))return;R.dogId=$('#r_dog').value;R.placeId=$('#r_place').value;R.at=$('#r_at').value;R.menu=readMenu('rmchip','r_menu2');R.rem=readRems()}
 V.resEdit=()=>{if(!R)return V.home();
   return shell(R._new?'予約を追加':'予約',`<div class="sec">予約</div><div class="card">${dogField('r_dog',R.dogId,'resDog(this.value)')}
 <label>お店<span class="req">必須</span></label><select id="r_place">${placeOpts(R.placeId)}</select>
 <button class="link" onclick="syncR();go('placeEdit',{from:'res'})">＋ 新しいお店を登録</button>
 <label>予約日時<span class="req">必須</span></label><input type="datetime-local" id="r_at" value="${esc(R.at)}">
-<label>予約内容（任意）</label><input id="r_menu" value="${esc(R.menu)}" placeholder="例：カット＋シャンプー、顔まわり短め"></div>
+<label>予約内容（タップで選択・任意）</label><div>${menuChips('rmchip',menuParts(R.menu).sel)}</div><input id="r_menu2" value="${esc(menuParts(R.menu).other)}" placeholder="その他（例：顔まわり短め）" style="margin-top:8px"></div>
 <div class="sec">通知</div><div class="card"><p class="muted" style="margin-top:0">「◯日前の◯時」をいくつでも追加できます。</p>${remEditor(R.rem)}</div>
 ${R._new?'':`<button class="btn sub" onclick="resCal()">予約と通知をカレンダーに追加</button>${placeBtns(place(R.placeId))}<button class="link danger" onclick="delRes()">この予約を削除</button>`}`,{back:"R=null;back()",bar:`<button class="btn" onclick="saveRes()">保存する</button>`})};
 async function saveRes(){syncR();
@@ -471,8 +476,7 @@ function syncD(){if(!$('#f_date'))return;D.dogId=$('#f_dog').value;D.date=$('#f_
   D.menus=[...new Set([...ch,...ot])];
   D.price=$('#f_price').value.replace(/[^\d]/g,'');D.staff=$('#f_staff').value.trim();
   D.cond=$('#f_cond').value;D.condNote=$('#f_condnote').value.trim();
-  D.memo=$('#f_memo').value;D.nextAt=$('#f_next').value;D.nplace=$('#f_nplace').value;D.nextMenu=$('#f_nextmenu').value.trim();D.rem=readRems()}
-function setScore(n){D.score=D.score===n?0:n;qa('#f_stars button').forEach((b,i)=>b.classList.toggle('on',i<D.score))}
+  D.memo=$('#f_memo').value;D.nextAt=$('#f_next').value;D.nplace=$('#f_nplace').value;D.nextMenu=readMenu('nmchip','f_nextmenu2');D.rem=readRems()}
 function applyFav(id){if(!id)return;syncD();const f=favOf(id);if(!f)return;D.memo=f.memo||'';if(f.menus?.length)D.menus=[...f.menus];render();toast('「'+f.name+'」の内容を入れました')}
 V.recEdit=()=>{if(!D)return V.home();
   const ph=(k,l)=>`<div><label>${l}</label><div class="photo" onclick="setPhoto('${k}')">${D[k]?`<img data-img="${D[k]}">`:'タップして<br>撮影・選択'}</div></div>`;
@@ -491,8 +495,7 @@ V.recEdit=()=>{if(!D)return V.home();
 <input id="f_mother" value="${esc(other)}" placeholder="その他（例：マイクロバブル）" style="margin-top:8px">
 <label>オーダー内容・メモ（任意）</label>${favSel}<textarea id="f_memo" placeholder="例：顔まわり短め、耳は丸く、体は5mm">${esc(D.memo)}</textarea>
 <div class="row"><div><label>金額（任意）</label><input id="f_price" type="number" inputmode="numeric" value="${esc(D.price)}" placeholder="例：6500"></div><div><label>担当者（任意）</label><input id="f_staff" value="${esc(D.staff)}" placeholder="例：山田さん"></div></div></div>
-<div class="sec">点数・体調</div><div class="card">
-<label>点数（任意・同じ★をもう一度押すと取り消し）</label><div class="stars" id="f_stars">${[1,2,3,4,5].map(n=>`<button type="button" class="${n<=(D.score||0)?'on':''}" onclick="setScore(${n})">★</button>`).join('')}</div>
+<div class="sec">体調</div><div class="card">
 <label>体調（任意）</label><select id="f_cond"><option value="">選ばない</option>${CONDS.map(c=>`<option value="${c}" ${c===D.cond?'selected':''}>${c}</option>`).join('')}</select>
 <input id="f_condnote" value="${esc(D.condNote)}" placeholder="気になったこと（例：耳が少し赤い）" style="margin-top:8px"></div>
 <div class="sec">次回の予約（その場で予約したとき）</div><div class="card">
@@ -500,7 +503,7 @@ V.recEdit=()=>{if(!D)return V.home();
 <p class="muted" style="margin:6px 0 0">${iv>0?`予約しない場合は、来店から${iv}日たつとホームに「そろそろ予約」と出ます。`:'予約しない場合のお知らせはオフです（ワンちゃんの設定で変えられます）。'}</p>
 <label>予約するお店</label><select id="f_nplace">${placeOpts(D.nplace||D.placeId)}</select>
 <button class="link" onclick="syncD();go('placeEdit',{from:'nrec'})">＋ 新しいお店を登録</button>
-<label>予約内容（任意）</label><input id="f_nextmenu" value="${esc(D.nextMenu)}" placeholder="例：カット＋シャンプー">
+<label>予約内容（タップで選択・任意）</label><div>${menuChips('nmchip',menuParts(D.nextMenu).sel)}</div><input id="f_nextmenu2" value="${esc(menuParts(D.nextMenu).other)}" placeholder="その他（例：顔まわり短め）" style="margin-top:8px">
 <label>通知（「◯日前の◯時」をいくつでも）</label>${remEditor(D.rem)}</div>`,{back:'cancelRec()',bar:`<button class="btn" onclick="saveRec()">保存する</button>`})};
 async function setPhoto(k){syncD();const f=await pickFile('image/*');if(!f)return;
   try{const id=await putImg(await toPhoto(f));D._imgs.push(id);D[k]=id;render()}
@@ -534,7 +537,7 @@ ${hasPhoto?`<p class="muted" style="margin:6px 0 0">このままインスタに�
 ${lk&&new Date(lk.at)>new Date()?`<button class="btn sub" onclick="calRes('${lk.id}')">次回の予約をカレンダーに追加</button>`:''}
 <button class="link" onclick="go('home')">ホームに戻る</button></div>`:'';
   return shell(`${dd?.name||''} ${fmtDate(r.date)}`,`${done}${photos}
-<div class="card"><b style="font-size:17px">${esc(pl.name)}</b>${r.score?`<div>${starHtml(r.score)}</div>`:''}
+<div class="card"><b style="font-size:17px">${esc(pl.name)}</b>
 ${it('来店日時',esc(visitStr(r)))}
 ${it('やったこと',esc((r.menus||[]).join('・')))}
 ${it('オーダー内容・メモ',esc(memoOf(r)))}
@@ -813,7 +816,8 @@ async function ahydrate(){for(const el of qa('img[data-aimg]')){const v=await sr
 const _hyd=hydrate;hydrate=async()=>{await _hyd();await ahydrate()};
 function aFlt(i){Z.flt=FL()[i]||'all';render()}
 function aDog(v){Z.dog=v;render()}
-function fltChips(){return FL().map((v,i)=>`<span class="chip ${Z.flt===v?'on':''}" onclick="aFlt(${i})">${esc(FLT[v]||'#'+v.slice(2))}</span>`).join('')}
+const chipOf=v=>{const i=FL().indexOf(v);return `<span class="chip ${Z.flt===v?'on':''}" onclick="aFlt(${i})">${esc(FLT[v]||'#'+v.slice(2))}</span>`};
+function fltChips(o){o=o||{};return FL().filter(v=>!(o.noFav&&v==='fav')).map(chipOf).join('')}
 function dogAvatar(d){if(!d)return'';if(d.icon)return `<img class="dav" src="${d.icon}">`;
   const r=recsOf(d.id)[0],c=r?cover(r):null;return c?`<img class="dav" data-img="${c}">`:'<span class="dav">🐾</span>'}
 function dogChips(){const dogs=S.dogs.filter(d=>!(set().albumHide||[]).includes(d.id));if(!dogs.length)return'';
@@ -827,7 +831,7 @@ V.history=()=>{if(!S.dogs.length)return V.home();
   if(cur!==null)h+='</div>';
   return shell('アルバム',`${dogChips()}<div class="row" style="margin-top:10px"><button class="btn sub small" onclick="go('xahist')">トリミング履歴</button><button class="btn sub small" onclick="aAdd()">＋ 写真を追加</button></div>
 <button class="btn" style="margin-top:12px" onclick="go('xamake')">成長アルバムの画像を作る</button>
-<div style="margin-top:6px">${fltChips()}<button class="link" style="display:inline;width:auto;padding:8px" onclick="go('xatags')">タグを整理</button></div>
+<div style="margin-top:6px">${fltChips({noFav:1})}<div style="margin-top:6px">${chipOf('fav')}<button class="link" style="display:inline;width:auto;padding:8px" onclick="go('xatags')">タグを整理</button></div></div>
 <p class="muted" style="margin:2px 0 0">${list.length}枚</p>
 ${h||`<p class="muted">${Z.flt==='fav'?'お気に入りの写真がありません。':'写真がありません。'}</p>`}`)};
 function aOpen(k){const e=entryOf(k);if(!e)return;if(Z.flt==='fav'&&e.rec){const f=S.favs.find(x=>x.recId===e.rec);if(f)return go('xfav',f.id)}go('xaopen',k)}
@@ -920,13 +924,20 @@ async function mshare(){const cv=$('#acv');if(!cv)return;await aDraw();if(!M.sel
   copyText(['#成長記録','#犬のいる暮らし',APP_TAG].join('\n')).then(ok=>{if(ok)toast('ハッシュタグをコピーしました')});
   shareFiles([new File([b],'album.jpg',{type:'image/jpeg'})])}
 /* ===== お気に入り ===== */
-const FF={img:'お気に入りの写真',before:'ビフォーの写真',memo:'お願いした内容',dog:'ワンちゃん',shop:'お店',staff:'担当者',menu:'やったこと',date:'来店日',price:'金額',score:'点数',cond:'体調'};
+let FZD='';
+V.favs=()=>{const dogs=S.dogs.filter(d=>!d.hidden&&S.favs.some(f=>f.dogId===d.id));
+  const chips=dogs.length>1?`<div style="margin-bottom:8px">${[['','🐾 全員'],...dogs.map(d=>[d.id,d.name])].map(([v,l])=>`<span class="chip ${FZD===v?'on':''}" onclick="fDog('${v}')">${esc(l)}</span>`).join('')}</div>`:'';
+  const list=S.favs.filter(f=>!FZD||f.dogId===FZD);
+  const head=S.favs.length?`<p class="muted" style="margin-top:0">お店で見せたいカットです。タップすると大きく表示します。</p>`:'';
+  return shell('お気に入り',`${head}${chips}${list.map(favCard).join('')||'<div class="card"><b>まだお気に入りがありません</b><div class="muted" style="margin-top:6px">「アルバム」→「トリミング履歴」の☆、または記録の詳細のボタンから追加できます。</div></div>'}`)};
+window.fDog=v=>{FZD=v;render()};
+const FF={img:'お気に入りの写真',before:'ビフォーの写真',memo:'お願いした内容',dog:'ワンちゃん',shop:'お店',staff:'担当者',menu:'やったこと',date:'来店日',price:'金額',cond:'体調'};
 const FDEF=['img','memo','shop','staff','date'];
 const favShow=()=>{const s=set();if(!Array.isArray(s.favShow))s.favShow=FDEF.slice();return s.favShow};
 V.xfav=id=>{const f=favOf(id);if(!f)return shell('お気に入り','<p class="muted">見つかりません。</p>',{back:1});
   const r=recOf(f.recId),sh=favShow(),it=(l,v)=>v?`<div class="muted" style="margin-top:10px">${l}</div><div class="pre">${v}</div>`:'';
   const val={memo:esc(f.memo||(r?memoOf(r):'')),dog:esc(dog(f.dogId)?.name||''),shop:r?esc((place(r.placeId)||{}).name||''):'',staff:esc(f.staff||r?.staff||''),
-    menu:esc((f.menus&&f.menus.length?f.menus:r?.menus||[]).join('・')),date:r?esc(visitStr(r)):'',price:r?yen(r.price):'',score:r&&r.score?starHtml(r.score):'',cond:r?esc([r.cond,r.condNote].filter(Boolean).join('　')):''};
+    menu:esc((f.menus&&f.menus.length?f.menus:r?.menus||[]).join('・')),date:r?esc(visitStr(r)):'',price:r?yen(r.price):'',cond:r?esc([r.cond,r.condNote].filter(Boolean).join('　')):''};
   let h='';for(const k of Object.keys(FF)){if(!sh.includes(k))continue;
     if(k==='img')h+=f.img?`<div class="photo big"><img data-img="${f.img}"></div>`:'';
     else if(k==='before')h+=r&&r.before?`<div class="muted" style="margin-top:12px">ビフォー</div><div class="photo big" style="width:55%"><img data-img="${r.before}"></div>`:'';
