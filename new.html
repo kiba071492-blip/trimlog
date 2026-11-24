@@ -130,7 +130,7 @@ const DEF_PHRASES=['さっぱりしました','今月もかわいくしてもら
 const FONT='-apple-system,"Hiragino Sans",sans-serif';
 const WD='日月火水木金土';
 const DAY=86400000;
-const TABS=[['home','ホーム'],['history','アルバム'],['favs','お気に入り'],['settings','設定']];
+const TABS=[['home','ホーム'],['history','アルバム'],['settings','設定']];
 const TAB_IDS=TABS.map(t=>t[0]);
 
 /* ===== 共通の部品 ===== */
@@ -300,9 +300,10 @@ const favCard=f=>`<div class="card list-item" onclick="go('xfav','${f.id}')"><di
 const histRow=r=>{const p=place(r.placeId)||{},on=!!favOfRec(r);
   return `<div class="card list-item"><div class="photo" onclick="go('rec','${r.id}')">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1" onclick="go('rec','${r.id}')"><b>${esc(visitStr(r))}</b><div class="muted">${esc(p.name||'')}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><button class="xstar" onclick="xFav('${r.id}')">${on?'★':'☆'}</button></div>`};
 V.xdog=id=>{const d=dog(id);if(!d)return shell('ワンちゃん','<p class="muted">見つかりません。</p>',{back:1});
-  const recs=recsOf(id);
+  const favs=S.favs.filter(f=>f.dogId===id),recs=recsOf(id);
   return shell(d.name,`<div class="sec">次回の予約</div><div class="card">${resBox(upcoming().filter(x=>x.dogId===id),id)}</div>
 <div class="card list-item" style="margin-top:18px">${dogPic(d,64)}<div style="flex:1"><b style="font-size:18px">${esc(d.name)}</b>${d.breed?`<div class="muted">${esc(d.breed)}</div>`:''}</div><button class="xedit" onclick="go('dogEdit','${id}')">編集</button></div>
+<div class="sec">お気に入り</div>${favs.map(favCard).join('')||'<p class="muted">履歴の☆を押すと、ここに入ります。</p>'}
 <div class="sec">履歴</div>${recs.map(histRow).join('')||'<p class="muted">まだ記録がありません。</p>'}`,{back:1})};
 async function xFav(id){const r=recOf(id);if(!r)return;const f=favOfRec(r);
   if(f){if(!confirm('お気に入りから外しますか？'))return;S.favs=S.favs.filter(x=>x!==f);if(f.img)await delImg(f.img);await save();render();return toast('お気に入りから外しました')}
@@ -924,13 +925,6 @@ async function mshare(){const cv=$('#acv');if(!cv)return;await aDraw();if(!M.sel
   copyText(['#成長記録','#犬のいる暮らし',APP_TAG].join('\n')).then(ok=>{if(ok)toast('ハッシュタグをコピーしました')});
   shareFiles([new File([b],'album.jpg',{type:'image/jpeg'})])}
 /* ===== お気に入り ===== */
-let FZD='';
-V.favs=()=>{const dogs=S.dogs.filter(d=>!d.hidden&&S.favs.some(f=>f.dogId===d.id));
-  const chips=dogs.length>1?`<div style="margin-bottom:8px">${[['','🐾 全員'],...dogs.map(d=>[d.id,d.name])].map(([v,l])=>`<span class="chip ${FZD===v?'on':''}" onclick="fDog('${v}')">${esc(l)}</span>`).join('')}</div>`:'';
-  const list=S.favs.filter(f=>!FZD||f.dogId===FZD);
-  const head=S.favs.length?`<p class="muted" style="margin-top:0">お店で見せたいカットです。タップすると大きく表示します。</p>`:'';
-  return shell('お気に入り',`${head}${chips}${list.map(favCard).join('')||'<div class="card"><b>まだお気に入りがありません</b><div class="muted" style="margin-top:6px">「アルバム」→「トリミング履歴」の☆、または記録の詳細のボタンから追加できます。</div></div>'}`)};
-window.fDog=v=>{FZD=v;render()};
 const FF={img:'お気に入りの写真',before:'ビフォーの写真',memo:'お願いした内容',dog:'ワンちゃん',shop:'お店',staff:'担当者',menu:'やったこと',date:'来店日',price:'金額',cond:'体調'};
 const FDEF=['img','memo','shop','staff','date'];
 const favShow=()=>{const s=set();if(!Array.isArray(s.favShow))s.favShow=FDEF.slice();return s.favShow};
