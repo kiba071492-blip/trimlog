@@ -217,6 +217,7 @@ const dogFilter=(cur,on)=>S.dogs.length>1?`<select onchange="${on}" style="margi
 
 /* ===== 写真（アプリの中にコピーして保存） ===== */
 function pickFile(accept){return new Promise(res=>{const i=document.createElement('input');i.type='file';if(accept)i.accept=accept;i.style.display='none';document.body.appendChild(i);i.onchange=()=>{res(i.files[0]||null);i.remove()};i.click()})}
+function pickFiles(accept){return new Promise(res=>{const i=document.createElement('input');i.type='file';i.multiple=true;if(accept)i.accept=accept;i.style.display='none';document.body.appendChild(i);i.onchange=()=>{res([...i.files]);i.remove()};i.click()})}
 function loadSrc(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 async function toPhoto(file){
   const url=URL.createObjectURL(file);
@@ -783,7 +784,7 @@ window.xbTog=id=>{if(X.bulk.includes(id))X.bulk=X.bulk.filter(x=>x!==id);else if
 })();
 
 /* ===== アルバム ===== */
-(function(){const st=document.createElement('style');st.textContent='.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.athumb{position:relative;aspect-ratio:1;background:#f3e3e6;border-radius:6px;overflow:hidden}.athumb img{width:100%;height:100%;object-fit:cover}.athumb span{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 6px;border-radius:8px}.athumb.on{outline:4px solid var(--main);outline-offset:-4px}#acv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}';document.head.appendChild(st)})();
+(function(){const st=document.createElement('style');st.textContent='.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.athumb{position:relative;aspect-ratio:1;background:#f3e3e6;border-radius:6px;overflow:hidden}.athumb img{width:100%;height:100%;object-fit:cover}.athumb span{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 6px;border-radius:8px}.athumb.on{outline:4px solid var(--main);outline-offset:-4px}#acv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15);touch-action:none;-webkit-user-select:none;user-select:none}';document.head.appendChild(st)})();
 const SHAPES={reel:['縦長（9:16）',1080,1920],feed:['少し縦長（4:5）',1080,1350],sq:['正方形',1080,1080]};
 const FLT={all:'すべて',after:'アフター',before:'ビフォー',fav:'★ お気に入り'};
 const DEF_ATAGS=['お散歩','お出かけ','誕生日'];
@@ -833,14 +834,32 @@ V.history=()=>{if(!S.dogs.length)return V.home();
   if(cur!==null)h+='</div>';
   return shell('アルバム',`${dogChips()}<div class="row" style="margin-top:10px"><button class="btn sub small" onclick="go('xahist')">トリミング履歴</button><button class="btn sub small" onclick="aAdd()">＋ 写真を追加</button></div>
 <button class="btn" style="margin-top:12px" onclick="go('xamake')">アルバムを作る</button>
-<div class="fltrow">${fltChips({noFav:1})}</div><div class="fltrow">${chipOf('fav')}<button class="link" style="display:inline;width:auto;padding:8px" onclick="go('xatags')">タグを整理</button></div>
+<div class="fltrow">${fltChips({noFav:1})}</div><div class="fltrow"><button class="link" style="display:inline-block;width:auto;padding:2px 0" onclick="go('xatags')">タグを整理</button></div><div class="fltrow">${chipOf('fav')}</div>
 <p class="muted" style="margin:2px 0 0">${list.length}枚</p>
 ${h||`<p class="muted">${Z.flt==='fav'?'お気に入りの写真がありません。':'写真がありません。'}</p>`}`)};
 function aOpen(k){const e=entryOf(k);if(!e)return;if(Z.flt==='fav'&&e.rec){const f=S.favs.find(x=>x.recId===e.rec);if(f)return go('xfav',f.id)}go('xaopen',k)}
-async function aAdd(){const f=await pickFile('image/*');if(!f)return;
-  try{const data=await toPhoto(f),id=uid();await aset('img_'+id,data);ACache.set(id,data);
-    AD.list.push({id,dogId:Z.dog||firstDog(),date:today(),memo:'',created:Date.now()});await saveAD();toast('アルバムに追加しました');render()}
-  catch(e){toast('写真を読み込めませんでした')}}
+let AAD=null;
+function aAdd(){AAD={dogId:Z.dog||firstDog(),date:today(),memo:'',items:[]};go('aadd')}
+function syncAAD(){if(!AAD)return;const g=(id,cur)=>{const el=$(('#'+id));return el?el.value:cur};
+  AAD.dogId=g('a_dog',AAD.dogId);AAD.date=g('a_date',AAD.date);AAD.memo=g('a_memo',AAD.memo)||''}
+async function aPick(){syncAAD();const fs=await pickFiles('image/*');if(!fs.length)return;let ok=0;
+  for(const f of fs){try{AAD.items.push({data:await toPhoto(f)});ok++}catch(e){}}
+  render();if(ok)toast(ok+'枚を選びました')}
+function aDelItem(i){if(!AAD)return;AAD.items.splice(i,1);render()}
+async function aSaveAll(){syncAAD();if(!AAD)return;if(!AAD.items.length)return toast('写真を選んでください');
+  const dg=AAD.dogId,dt=AAD.date||today(),mm=AAD.memo||'';let n=0;
+  for(const it of AAD.items){const id=uid();await aset('img_'+id,it.data);ACache.set(id,it.data);
+    AD.list.push({id,dogId:dg,date:dt,memo:mm,created:Date.now()});n++}
+  await saveAD();AAD=null;if(!Z.dog)Z.dog=dg;toast(n+'枚を追加しました');go('history')}
+V.aadd=()=>{if(!AAD)return V.history();
+  const sel=S.dogs.map(d=>`<option value="${d.id}" ${d.id===AAD.dogId?'selected':''}>${esc(d.name)}</option>`).join('');
+  const items=AAD.items.map((it,i)=>`<div class="athumb"><img src="${it.data}"><button class="xx" style="position:absolute;right:2px;top:2px;background:rgba(0,0,0,.5);color:#fff;border-radius:50%;width:26px;height:26px;font-size:14px" onclick="aDelItem(${i})">✕</button></div>`).join('');
+  return shell('写真を追加',`<div class="card"><label>ワンちゃん</label><select id="a_dog" onchange="syncAAD()">${sel}</select>
+<label>日付</label><input type="date" id="a_date" value="${esc(AAD.date)}" onchange="syncAAD()">
+<label>メモ（任意・まとめて同じ内容）</label><input id="a_memo" value="${esc(AAD.memo)}" onchange="syncAAD()" placeholder="例：お散歩のあと">
+<button class="btn sub" style="margin-top:14px" onclick="aPick()">＋ 写真を選ぶ（まとめて選べます）</button>
+<p class="muted" style="margin-bottom:0">選んだ写真は、上のワンちゃん・日付でまとめて登録されます。</p></div>
+<div class="sec">選んだ写真（${AAD.items.length}枚）</div><div class="agrid">${items||'<p class="muted">まだ選んでいません</p>'}</div>`,{back:'AAD=null;back()',bar:`<button class="btn" onclick="aSaveAll()">追加する（${AAD.items.length}枚）</button>`})};
 
 /* 写真の詳細 */
 V.xaopen=k=>{const e=entryOf(k);if(!e)return shell('写真','<p class="muted">見つかりません。</p>',{back:1});const tg=AD.tagOf[k]||[];
@@ -891,11 +910,12 @@ V.xamake=()=>{const key=M.per+'|'+Z.dog+'|'+Z.flt;if(M.key!==key){M.key=key;M.se
 <div class="xl">色</div><div class="sws">${STYLES.map((s,i)=>`<button class="sw ${i===M.style?'on':''}" onclick="mset('style','${i}')"><i style="background:${s.bg}"></i>${esc(s.name)}</button>`).join('')}</div>
 <div class="xl">タイトル（空欄なら出ません）</div><input value="${esc(M.title)}" oninput="M.title=this.value;M.edited=true;aDraw()">
 <label class="xck" style="margin-top:14px"><input type="checkbox" ${M.dt?'checked':''} onchange="M.dt=this.checked;aDraw()">写真に日付を入れる</label></div>
-<div class="card" style="padding:10px"><canvas id="acv"></canvas><p class="muted" style="text-align:center;margin:8px 0 0">古い順にならびます（${M.sel.length}枚 / 全${cnt}枚）</p></div>
+<div class="card" style="padding:10px"><canvas id="acv"></canvas><p class="muted" style="text-align:center;margin:8px 0 0">写真をタップして選び、指で動かせます。2本指で拡大・縮小（${M.sel.length}枚 / 全${cnt}枚）</p>
+<div class="row" style="margin-top:8px"><button class="btn sub small" onclick="aZoom(-0.3)">− 小さく</button><button class="btn sub small" onclick="aZoom(0.3)">＋ 大きく</button><button class="btn sub small" onclick="aClearCrop()">位置を戻す</button></div></div>
 <div class="sec">のせる写真（${MAXA}枚まで）</div>${dogChips()}<div class="fltrow">${fltChips({noFav:1})}</div><div class="fltrow">${chipOf('fav')}</div>
 <div class="row" style="margin-top:10px"><button class="btn sub small" onclick="mall()">${all?'すべて選ぶ':'まんべんなく'+MAXA+'枚'}</button><button class="btn sub small" onclick="mclear()">選択をクリア</button></div>
 <div class="agrid" style="margin-top:8px">${pool().map(e=>`<div class="athumb ${M.sel.includes(e.key)?'on':''}" onclick="mtog('${e.key}')"><img ${imgAttr(e)}>${M.sel.includes(e.key)?`<span>${M.sel.indexOf(e.key)+1}</span>`:''}</div>`).join('')||'<p class="muted">写真がありません</p>'}</div>`,{back:1,bar:`<button class="btn" onclick="mshare()">画像を共有・保存（${M.sel.length}枚）</button>`})};
-AFTER.xamake=()=>aDraw();
+AFTER.xamake=()=>{bindAcv();aDraw()};
 function cphoto(x,im,X,Y,w,h){x.save();x.beginPath();x.rect(X,Y,w,h);x.clip();x.fillStyle='#eee';x.fillRect(X,Y,w,h);
   if(im){const s=Math.max(w/im.naturalWidth,h/im.naturalHeight),dw=im.naturalWidth*s,dh=im.naturalHeight*s;x.drawImage(im,X+(w-dw)/2,Y+(h-dh)/2,dw,dh)}x.restore()}
 function ctext(x,t,X,Y,size,w,col,maxW){if(!t)return;x.fillStyle=col;x.textAlign='center';x.textBaseline='middle';let s=size;do{x.font=`${w} ${s}px ${FONT}`;s-=2}while(s>18&&x.measureText(t).width>maxW);x.fillText(t,X,Y,maxW)}
@@ -903,31 +923,70 @@ function cicon(x,im,cx,cy,r,col){x.save();x.beginPath();x.arc(cx,cy,r,0,7);x.cli
   if(im){const s=Math.max(r*2/im.naturalWidth,r*2/im.naturalHeight),dw=im.naturalWidth*s,dh=im.naturalHeight*s;x.drawImage(im,cx-dw/2,cy-dh/2,dw,dh)}x.restore();
   x.save();x.beginPath();x.arc(cx,cy,r+3,0,7);x.lineWidth=6;x.strokeStyle=col;x.stroke();x.restore()}
 async function iconSrc(d){if(!d)return null;if(d.icon)return d.icon;const r=recsOf(d.id)[0],id=r?cover(r):null;return id?(await getImg(id)):null}
-let ATOK=0;
+const AIM=new Map();
+const acropOf=k=>{const s=set();s.albumCrop=s.albumCrop||{};const c=s.albumCrop[k]=s.albumCrop[k]||{z:1,fx:0,fy:0};
+  if(c.z==null)c.z=1;if(c.fx==null)c.fx=0;if(c.fy==null)c.fy=0;return c};
+function aclamp(cell,cr){cr.z=Math.min(6,Math.max(1,cr.z));const im=AIM.get(cell.key);if(!im)return;
+  const s=Math.max(cell.w/im.naturalWidth,cell.h/im.naturalHeight)*cr.z,dw=im.naturalWidth*s,dh=im.naturalHeight*s;
+  const lx=Math.max(0,(dw-cell.w)/2)/cell.w,ly=Math.max(0,(dh-cell.h)/2)/cell.h;
+  cr.fx=Math.max(-lx,Math.min(lx,cr.fx));cr.fy=Math.max(-ly,Math.min(ly,cr.fy))}
+let ATOK=0,ARAF=0;
+const ared=()=>{cancelAnimationFrame(ARAF);ARAF=requestAnimationFrame(aPaint)};
 async function aDraw(){const cv=$('#acv');if(!cv)return;const tok=++ATOK;
   let es=M.sel.map(entryOf).filter(Boolean);
   if(M.order!=='sel')es=es.sort((a,b)=>M.order==='new'?(b.date||'').localeCompare(a.date||''):(a.date||'').localeCompare(b.date||''));
   const ims=[];
-  for(const e of es){const s=await srcOf(e);ims.push(s?await loadSrc(s).catch(()=>null):null);if(tok!==ATOK)return}
-  const icd=await iconSrc(albumDog());const icIm=icd?await loadSrc(icd).catch(()=>null):null;if(tok!==ATOK)return;
-  const[,W,H]=SHAPES[M.shape];cv.width=W;cv.height=H;const x=cv.getContext('2d'),t=String(M.title||'').trim(),st=STYLES[M.style]||STYLES[0];
+  for(const e of es){let im=AIM.get(e.key);if(!im){const src=await srcOf(e);if(src)im=await loadSrc(src).catch(()=>null);if(im)AIM.set(e.key,im)}ims.push(im||null);if(tok!==ATOK)return}
+  const icd=await iconSrc(albumDog());if(icd&&!AIM.has('__icon')){const im=await loadSrc(icd).catch(()=>null);if(im)AIM.set('__icon',im)}
+  if(tok!==ATOK)return;
+  M._es=es;M._ims=ims;M._icon=AIM.get('__icon')||null;aPaint()}
+function aPaint(){const cv=$('#acv');if(!cv)return;
+  const es=M._es||[],ims=M._ims||[],st=STYLES[M.style]||STYLES[0];
+  const[,W,H]=SHAPES[M.shape];if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+  const x=cv.getContext('2d'),t=String(M.title||'').trim();
   x.fillStyle=st.bg;x.fillRect(0,0,W,H);let top=40;
   const ir=Math.round(W*0.075);
-  if(icIm){cicon(x,icIm,W/2,top+ir,ir,st.label);top+=ir*2+14}
+  if(M._icon){cicon(x,M._icon,W/2,top+ir,ir,st.label);top+=ir*2+14}
   if(t){ctext(x,t,W/2,top+38,62,'bold',st.text,W-80);top+=84}
-  top+=18;const k=ims.length,L=40,bot=H-80,aw=W-80,ah=Math.max(160,bot-top);
+  top+=18;
+  const k=ims.length,L=40,bot=H-80,aw=W-80,ah=Math.max(160,bot-top);
   const gap=M.gap==='tight'?4:M.gap==='loose'?22:(k>24?6:k>12?8:14);
-  let cols;
-  if(M.cols!=='auto'){cols=Math.min(6,Math.max(1,Number(M.cols)||1))}
+  let cols;if(M.cols!=='auto')cols=Math.min(6,Math.max(1,Number(M.cols)||1));
   else{let best={c:1,s:0};for(let c=1;c<=10;c++){const r=Math.ceil(Math.max(k,1)/c),cw=(aw-gap*(c-1))/c,ch=(ah-gap*(r-1))/r,s=Math.min(cw,ch);if(s>best.s)best={c,s}}cols=best.c}
   cols=Math.min(cols,Math.max(1,k||1));
   const rows=Math.max(1,Math.ceil(k/cols)),cw=(aw-gap*(cols-1))/cols,ch=(ah-gap*(rows-1))/rows;
+  M.cells=[];
   ims.forEach((im,i)=>{const r=Math.floor(i/cols),inRow=Math.min(cols,k-r*cols);let X=L+(i%cols)*(cw+gap);if(inRow<cols)X+=(cols-inRow)*(cw+gap)/2;const Y=top+r*(ch+gap);
-    cphoto(x,im,X,Y,cw,ch);
-    if(M.dt&&es[i]&&es[i].date){const fs=Math.max(16,Math.min(30,cw/7)),tx=fmtDate(es[i].date);x.font=`bold ${fs}px ${FONT}`;const tw=Math.min(x.measureText(tx).width+fs,cw);
-      x.fillStyle='rgba(0,0,0,.55)';x.fillRect(X,Y+ch-fs*1.5,tw,fs*1.5);x.fillStyle='#fff';x.textAlign='left';x.textBaseline='middle';x.fillText(tx,X+fs/2,Y+ch-fs*0.75,cw-fs)}});
+    const e=es[i]||{},cr=acropOf(e.key||('x'+i));
+    x.save();x.beginPath();x.rect(X,Y,cw,ch);x.clip();x.fillStyle='#eee';x.fillRect(X,Y,cw,ch);
+    if(im){const sc2=Math.max(cw/im.naturalWidth,ch/im.naturalHeight)*cr.z,dw=im.naturalWidth*sc2,dh=im.naturalHeight*sc2;
+      x.drawImage(im,X+(cw-dw)/2+cr.fx*cw,Y+(ch-dh)/2+cr.fy*ch,dw,dh)}
+    x.restore();
+    if(M.cur===e.key){x.save();x.strokeStyle=st.label;x.lineWidth=7;x.strokeRect(X+3,Y+3,cw-6,ch-6);x.restore()}
+    if(M.dt&&e.date){const fs=Math.max(16,Math.min(30,cw/7)),tx=fmtDate(e.date);x.font=`bold ${fs}px ${FONT}`;const tw=Math.min(x.measureText(tx).width+fs,cw);
+      x.fillStyle='rgba(0,0,0,.55)';x.fillRect(X,Y+ch-fs*1.5,tw,fs*1.5);x.fillStyle='#fff';x.textAlign='left';x.textBaseline='middle';x.fillText(tx,X+fs/2,Y+ch-fs*0.75,cw-fs)}
+    M.cells.push({key:e.key,x:X,y:Y,w:cw,h:ch})});
   if(!k)ctext(x,'下から写真を選んでください',W/2,(top+bot)/2,40,'normal',st.text,W-80);
   x.globalAlpha=.6;ctext(x,APP_NAME,W/2,H-40,28,'bold',st.text,W);x.globalAlpha=1}
+function bindAcv(){const cv=$('#acv');if(!cv||cv.dataset.ab)return;cv.dataset.ab=1;
+  const ptrs=new Map();let act=null,d0=0,z0=1;const saveLater=()=>laterSave();
+  const pos=e=>{const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height}};
+  const hit=q=>(M.cells||[]).find(c=>q.x>=c.x&&q.x<=c.x+c.w&&q.y>=c.y&&q.y<=c.y+c.h);
+  cv.addEventListener('pointerdown',e=>{const q=pos(e);if(!ptrs.size){const c=hit(q);if(!c)return;act=c;M.cur=c.key}else if(!act)return;
+    try{cv.setPointerCapture(e.pointerId)}catch(err){}ptrs.set(e.pointerId,q);M.cells=(M.cells||[]).map(c=>c);
+    if(ptrs.size===2){const[a1,b1]=[...ptrs.values()];d0=Math.hypot(a1.x-b1.x,a1.y-b1.y);z0=acropOf(act.key).z}ared()});
+  cv.addEventListener('pointermove',e=>{if(!act||!ptrs.has(e.pointerId))return;e.preventDefault();const q=pos(e),o=ptrs.get(e.pointerId),cr=acropOf(act.key);
+    if(ptrs.size===1){cr.fx+=(q.x-o.x)/act.w;cr.fy+=(q.y-o.y)/act.h}
+    ptrs.set(e.pointerId,q);
+    if(ptrs.size===2){const[a1,b1]=[...ptrs.values()];const d=Math.hypot(a1.x-b1.x,a1.y-b1.y);if(d0>0)cr.z=z0*d/d0}
+    aclamp(act,cr);ared()});
+  const up=e=>{ptrs.delete(e.pointerId);if(!ptrs.size){act=null;saveLater()}};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  cv.addEventListener('dblclick',e=>{const c=hit(pos(e));if(!c)return;const cr=acropOf(c.key);cr.z=1;cr.fx=0;cr.fy=0;M.cur=c.key;aPaint();save()})}
+window.aZoom=d=>{const k=M.cur||((M.cells||[])[0]||{}).key;if(!k)return toast('写真をタップして選んでください');
+  const cr=acropOf(k),cell=(M.cells||[]).find(c=>c.key===k);cr.z=Math.min(6,Math.max(1,cr.z+d));if(cell)aclamp(cell,cr);
+  M.cur=k;aPaint();save()};
+window.aClearCrop=()=>{const s=set();s.albumCrop={};M.cur=null;aPaint();save();toast('写真の位置を元に戻しました')};
 async function mshare(){const cv=$('#acv');if(!cv)return;await aDraw();if(!M.sel.length)return toast('写真を選んでください');
   const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.92));if(!b)return toast('画像を作れませんでした');
   copyText(['#成長記録','#犬のいる暮らし',APP_TAG].join('\n')).then(ok=>{if(ok)toast('ハッシュタグをコピーしました')});
