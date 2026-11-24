@@ -49,6 +49,7 @@ textarea{min-height:90px}
 .chip{display:inline-block;padding:8px 12px;margin:4px 4px 0 0;border-radius:20px;border:1px solid #ddd;color:#888;font-size:14px;background:#fff}
 .chip.on{background:var(--main);border-color:var(--main);color:#fff}
 .chip.mine{border-color:var(--main);color:var(--main)}
+.chip .dav{width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:-6px;margin-right:5px;background:#f3e3e6;display:inline-block;text-align:center;font-size:12px;line-height:22px;overflow:hidden}
 .list-item{display:flex;align-items:center;gap:12px}
 .list-item .photo{width:56px;flex:none;border-radius:8px}
 .minicall{flex:none;padding:8px 12px;border:2px solid var(--main);border-radius:10px;color:var(--main);background:#fff;font-weight:bold;text-decoration:none;font-size:13px}
@@ -291,7 +292,7 @@ const favCard=f=>`<div class="card list-item" onclick="go('xfav','${f.id}')"><di
 
 /* ===== ワンちゃんのページ ===== */
 const histRow=r=>{const p=place(r.placeId)||{},on=!!favOfRec(r);
-  return `<div class="card list-item"><div class="photo" onclick="go('order','${r.id}')">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1" onclick="go('order','${r.id}')"><b>${esc(visitStr(r))}</b><div class="muted">${esc(p.name||'')}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><button class="xstar" onclick="xFav('${r.id}')">${on?'★':'☆'}</button></div>`};
+  return `<div class="card list-item"><div class="photo" onclick="go('rec','${r.id}')">${cover(r)?`<img data-img="${cover(r)}">`:''}</div><div style="flex:1" onclick="go('rec','${r.id}')"><b>${esc(visitStr(r))}</b><div class="muted">${esc(p.name||'')}</div>${(r.menus||[]).length?`<div class="muted">${esc(r.menus.join('・'))}</div>`:''}</div><button class="xstar" onclick="xFav('${r.id}')">${on?'★':'☆'}</button></div>`};
 V.xdog=id=>{const d=dog(id);if(!d)return shell('ワンちゃん','<p class="muted">見つかりません。</p>',{back:1});
   const favs=S.favs.filter(f=>f.dogId===id),recs=recsOf(id);
   return shell(d.name,`<div class="sec">次回の予約</div><div class="card">${resBox(upcoming().filter(x=>x.dogId===id),id)}</div>
@@ -328,9 +329,9 @@ function xShowShare(id){const src=imgCache.get(id);if(!src)return toast('写真�
 const menuRow=(l,sub,on)=>`<div class="mrow" onclick="${on}"><div style="flex:1"><b>${l}</b>${sub?`<div class="muted">${sub}</div>`:''}</div><span class="muted">›</span></div>`;
 V.settings=()=>{const s=set();return shell('設定',`<div class="card" style="padding:0 14px">
 ${menuRow('ワンちゃんの登録・編集',S.dogs.map(dogLabel).join('、')||'まだいません',"go('dogs')")}
-${menuRow('お気に入りに表示する項目','',"go('xfavset')")}
 ${menuRow('お店の登録・編集',esc(S.places.map(p=>p.name).join('、')),"go('shops')")}
 ${menuRow('予約の通知の初期設定',remText(s.defRem),"openRemDef()")}
+${menuRow('お気に入りに表示する項目','',"go('xfavset')")}
 ${menuRow('バックアップ','データをファイルに保存・復元',"BK=null;go('backup')")}
 </div>${installHint()}<div class="sec">データ</div><div class="card"><p class="muted" style="margin-top:0">前回のバックアップ：${s.lastBk?ymd(s.lastBk):'まだしていません'}</p><button class="link danger" style="margin-top:0" onclick="xWipe()">すべてのデータを削除</button></div>`)};
 async function xWipe(){
@@ -542,7 +543,6 @@ ${it('担当者',esc(r.staff))}
 ${it('体調',esc([r.cond,r.condNote].filter(Boolean).join('　')))}
 ${placeBtns(pl)}</div>
 ${JUST!==id&&hasPhoto?`<button class="btn" onclick="go('xpost','${r.id}')">投稿画像を作る</button>`:''}
-<button class="btn sub" onclick="go('order','${r.id}')">このカットをお店で見せる</button>
 ${canRemind?`<button class="btn sub" onclick="remindCal('${r.id}')">「そろそろ予約」をカレンダーに追加（${fmtMD(dueDate(dd,r))}）</button>`:''}
 <div class="row" style="margin-top:8px"><button class="btn sub small" onclick="xFav('${r.id}')">${isFav?'★ お気に入りから外す':'★ お気に入りに登録'}</button><button class="btn sub small" onclick="editRec('${r.id}')">編集する</button></div>
 <button class="link danger" onclick="delRec('${r.id}')">この記録を削除</button>`,{back:JUST===id?"JUST=null;go('home')":1})};
@@ -779,13 +779,12 @@ window.xbTog=id=>{if(X.bulk.includes(id))X.bulk=X.bulk.filter(x=>x!==id);else if
 
 /* ===== アルバム ===== */
 (function(){const st=document.createElement('style');st.textContent='.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.athumb{position:relative;aspect-ratio:1;background:#f3e3e6;border-radius:6px;overflow:hidden}.athumb img{width:100%;height:100%;object-fit:cover}.athumb span{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 6px;border-radius:8px}.athumb.on{outline:4px solid var(--main);outline-offset:-4px}#acv{display:block;margin:0 auto;max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.15)}';document.head.appendChild(st)})();
-const KINDS={xmas:'クリスマス',ny:'お正月',grow:'成長アルバム',year:'1年まとめ'};
 const SHAPES={reel:['縦長（9:16）',1080,1920],feed:['少し縦長（4:5）',1080,1350],sq:['正方形',1080,1080]};
 const FLT={all:'すべて',after:'アフター',before:'ビフォー',fav:'★ お気に入り'};
 const DEF_ATAGS=['お散歩','お出かけ','誕生日'];
 let AD={list:[],tags:DEF_ATAGS.slice(),tagOf:{}};
 const Z={dog:'',flt:'all'};
-const M={kind:'xmas',per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],key:''};
+const M={per:'all',shape:'feed',style:0,title:'',edited:false,sel:[],key:'',cleared:false,dt:true};
 const ACache=new Map();
 let adbp=null;
 const adb=()=>adbp=adbp||new Promise((res,rej)=>{const q=indexedDB.open(ALBUM_DB,1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
@@ -815,8 +814,11 @@ const _hyd=hydrate;hydrate=async()=>{await _hyd();await ahydrate()};
 function aFlt(i){Z.flt=FL()[i]||'all';render()}
 function aDog(v){Z.dog=v;render()}
 function fltChips(){return FL().map((v,i)=>`<span class="chip ${Z.flt===v?'on':''}" onclick="aFlt(${i})">${esc(FLT[v]||'#'+v.slice(2))}</span>`).join('')}
-function dogChips(){const dogs=S.dogs.filter(d=>!(set().albumHide||[]).includes(d.id));if(dogs.length<2)return'';
-  return `<div>${[['','🐾 全員'],...dogs.map(d=>[d.id,d.name])].map(([v,l])=>`<span class="chip ${Z.dog===v?'on':''}" onclick="aDog('${v}')">${esc(l)}</span>`).join('')}</div>`}
+function dogAvatar(d){if(!d)return'';if(d.icon)return `<img class="dav" src="${d.icon}">`;
+  const r=recsOf(d.id)[0],c=r?cover(r):null;return c?`<img class="dav" data-img="${c}">`:'<span class="dav">🐾</span>'}
+function dogChips(){const dogs=S.dogs.filter(d=>!(set().albumHide||[]).includes(d.id));if(!dogs.length)return'';
+  const list=dogs.length>1?[['','🐾 全員'],...dogs.map(d=>[d.id,d.name])]:[[dogs[0].id,dogs[0].name]];
+  return `<div>${list.map(([v,l])=>`<span class="chip ${Z.dog===v?'on':''}" onclick="aDog('${v}')">${v?dogAvatar(dog(v)):''}${esc(l)}</span>`).join('')}</div>`}
 
 V.history=()=>{if(!S.dogs.length)return V.home();
   const list=shown();let h='',cur=null;
@@ -824,8 +826,9 @@ V.history=()=>{if(!S.dogs.length)return V.home();
     const t=(AD.tagOf[e.key]||[])[0];h+=`<div class="athumb" onclick="aOpen('${e.key}')"><img ${imgAttr(e)}>${t?`<span>#${esc(t)}</span>`:''}</div>`}
   if(cur!==null)h+='</div>';
   return shell('アルバム',`${dogChips()}<div class="row" style="margin-top:10px"><button class="btn sub small" onclick="go('xahist')">トリミング履歴</button><button class="btn sub small" onclick="aAdd()">＋ 写真を追加</button></div>
-<button class="btn" style="margin-top:12px" onclick="go('xamake')">クリスマス・お正月・成長アルバムの画像を作る</button>
+<button class="btn" style="margin-top:12px" onclick="go('xamake')">成長アルバムの画像を作る</button>
 <div style="margin-top:6px">${fltChips()}<button class="link" style="display:inline;width:auto;padding:8px" onclick="go('xatags')">タグを整理</button></div>
+<p class="muted" style="margin:2px 0 0">${list.length}枚</p>
 ${h||`<p class="muted">${Z.flt==='fav'?'お気に入りの写真がありません。':'写真がありません。'}</p>`}`)};
 function aOpen(k){const e=entryOf(k);if(!e)return;if(Z.flt==='fav'&&e.rec){const f=S.favs.find(x=>x.recId===e.rec);if(f)return go('xfav',f.id)}go('xaopen',k)}
 async function aAdd(){const f=await pickFile('image/*');if(!f)return;
@@ -856,53 +859,66 @@ V.xahist=()=>{const l=S.records.filter(r=>!Z.dog||r.dogId===Z.dog).sort(byNew);l
   for(const r of l){const yy=(r.date||'').slice(0,4);if(yy!==y){y=yy;h+=`<div class="sec">${yy}年</div>`}h+=recCard(r)}
   return shell('トリミング履歴',h||'<p class="muted">まだ記録がありません。</p>',{back:1})};
 
-/* 画像を作る */
-const seasonal=()=>M.kind==='xmas'||M.kind==='ny';
+/* 画像を作る（成長アルバム） */
+const MAXA=60;
 const years=()=>[...new Set(entries().map(e=>(e.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
 const pool=()=>entries().filter(e=>(!Z.dog||e.dogId===Z.dog)&&(M.per==='all'||(e.date||'').startsWith(M.per))&&match(e,Z.flt));
-function defSel(){const p=pool().filter(e=>Z.flt!=='all'||e.kind!=='before');if(seasonal())return p.slice(0,1).map(e=>e.key);
-  const a=p.slice().reverse();if(a.length<=9)return a.map(e=>e.key);return Array.from({length:9},(_,i)=>a[Math.round(i*(a.length-1)/8)].key)}
+function pick(n){const a=pool().filter(e=>Z.flt!=='all'||e.kind!=='before').slice().reverse();if(!a.length)return[];
+  if(a.length<=n)return a.map(e=>e.key);return Array.from({length:n},(_,i)=>a[Math.round(i*(a.length-1)/(n-1))].key)}
 const aName=()=>dog(Z.dog)?.name||(S.dogs.length===1?S.dogs[0].name:'');
-function defTitleA(){const n=aName();return M.kind==='xmas'?'Merry Christmas':M.kind==='ny'?'Happy New Year':M.kind==='grow'?`${n}の成長アルバム`:`${M.per==='all'?'':M.per+'年 '}${n}のトリミング`}
-function mset(k,v){M[k]=k==='style'?Number(v):v;if(k==='kind'||k==='per')M.sel=[];if(k==='kind'&&!M.edited)M.title='';render()}
-function mtog(k){const i=M.sel.indexOf(k);if(i>=0)M.sel.splice(i,1);else if(seasonal())M.sel=[k];else if(M.sel.length<9)M.sel.push(k);else return toast('9枚まで選べます');render()}
-V.xamake=()=>{const key=M.kind+'|'+M.per+'|'+Z.dog+'|'+Z.flt;if(M.key!==key){M.key=key;M.sel=[]}if(!M.sel.length)M.sel=defSel();if(!M.title)M.title=defTitleA();
+const albumDog=()=>dog(Z.dog)||(S.dogs.length===1?S.dogs[0]:null)||null;
+const defTitleA=()=>{const n=aName();return n?n+'の成長アルバム':'成長アルバム'};
+function mset(k,v){M[k]=k==='style'?Number(v):v;if(k==='per'){M.sel=[];M.cleared=false;if(!M.edited)M.title=''}render()}
+function mtog(k){const i=M.sel.indexOf(k);if(i>=0)M.sel.splice(i,1);else if(M.sel.length<MAXA)M.sel.push(k);else return toast(MAXA+'枚まで選べます');M.cleared=false;render()}
+function mall(){M.sel=pick(MAXA);M.cleared=false;render()}
+function mclear(){M.sel=[];M.cleared=true;render()}
+V.xamake=()=>{const key=M.per+'|'+Z.dog+'|'+Z.flt;if(M.key!==key){M.key=key;M.sel=[];M.cleared=false}
+  if(!M.sel.length&&!M.cleared)M.sel=pick(16);if(!M.title&&!M.edited)M.title=defTitleA();if(M.dt==null)M.dt=true;
   const sg=(o,cur,k)=>`<div class="seg sm" style="margin-top:6px">${Object.entries(o).map(([v,l])=>`<button class="${v===cur?'on':''}" onclick="mset('${k}','${v}')">${esc(Array.isArray(l)?l[0]:l)}</button>`).join('')}</div>`;
   const pers={all:'すべて'};years().forEach(y=>pers[y]=y+'年');
-  return shell('画像を作る',`<div class="card"><div class="xl">種類</div>${sg(KINDS,M.kind,'kind')}<div class="xl">期間</div><select class="xsel" onchange="mset('per',this.value)">${Object.entries(pers).map(([v,l])=>`<option value="${v}" ${v===M.per?'selected':''}>${l}</option>`).join('')}</select>
-<div class="xl">形</div>${sg(SHAPES,M.shape,'shape')}${seasonal()?'':`<div class="xl">色</div><div class="sws">${STYLES.map((s,i)=>`<button class="sw ${i===M.style?'on':''}" onclick="mset('style','${i}')"><i style="background:${s.bg}"></i>${esc(s.name)}</button>`).join('')}</div>`}
-<div class="xl">タイトル（空欄なら出ません）</div><input value="${esc(M.title)}" oninput="M.title=this.value;M.edited=true;aDraw()"></div>
-<div class="card" style="padding:10px"><canvas id="acv"></canvas></div>
-<div class="sec">のせる写真（${seasonal()?'1枚':'9枚まで'}）</div>${dogChips()}<div>${fltChips()}</div><div class="agrid" style="margin-top:8px">${pool().map(e=>`<div class="athumb ${M.sel.includes(e.key)?'on':''}" onclick="mtog('${e.key}')"><img ${imgAttr(e)}></div>`).join('')||'<p class="muted">写真がありません</p>'}</div>`,{back:1,bar:'<button class="btn" onclick="mshare()">画像を共有・保存</button>'})};
+  const cnt=pool().length,all=cnt<=MAXA;
+  return shell('成長アルバム',`<div class="card"><div class="xl">期間</div><select class="xsel" onchange="mset('per',this.value)">${Object.entries(pers).map(([v,l])=>`<option value="${v}" ${v===M.per?'selected':''}>${l}</option>`).join('')}</select>
+<div class="xl">形</div>${sg(SHAPES,M.shape,'shape')}
+<div class="xl">色</div><div class="sws">${STYLES.map((s,i)=>`<button class="sw ${i===M.style?'on':''}" onclick="mset('style','${i}')"><i style="background:${s.bg}"></i>${esc(s.name)}</button>`).join('')}</div>
+<div class="xl">タイトル（空欄なら出ません）</div><input value="${esc(M.title)}" oninput="M.title=this.value;M.edited=true;aDraw()">
+<label class="xck" style="margin-top:14px"><input type="checkbox" ${M.dt?'checked':''} onchange="M.dt=this.checked;aDraw()">写真に日付を入れる</label></div>
+<div class="card" style="padding:10px"><canvas id="acv"></canvas><p class="muted" style="text-align:center;margin:8px 0 0">古い順にならびます（${M.sel.length}枚 / 全${cnt}枚）</p></div>
+<div class="sec">のせる写真（${MAXA}枚まで）</div>${dogChips()}<div>${fltChips()}</div>
+<div class="row" style="margin-top:10px"><button class="btn sub small" onclick="mall()">${all?'すべて選ぶ':'まんべんなく'+MAXA+'枚'}</button><button class="btn sub small" onclick="mclear()">選択をクリア</button></div>
+<div class="agrid" style="margin-top:8px">${pool().map(e=>`<div class="athumb ${M.sel.includes(e.key)?'on':''}" onclick="mtog('${e.key}')"><img ${imgAttr(e)}>${M.sel.includes(e.key)?`<span>${M.sel.indexOf(e.key)+1}</span>`:''}</div>`).join('')||'<p class="muted">写真がありません</p>'}</div>`,{back:1,bar:`<button class="btn" onclick="mshare()">画像を共有・保存（${M.sel.length}枚）</button>`})};
 AFTER.xamake=()=>aDraw();
 function cphoto(x,im,X,Y,w,h){x.save();x.beginPath();x.rect(X,Y,w,h);x.clip();x.fillStyle='#eee';x.fillRect(X,Y,w,h);
   if(im){const s=Math.max(w/im.naturalWidth,h/im.naturalHeight),dw=im.naturalWidth*s,dh=im.naturalHeight*s;x.drawImage(im,X+(w-dw)/2,Y+(h-dh)/2,dw,dh)}x.restore()}
-function ctext(x,t,X,Y,size,w,col,maxW){if(!t)return;x.fillStyle=col;x.textAlign='center';x.textBaseline='middle';let s=size;do{x.font=`${w} ${s}px ${FONT}`;s-=2}while(s>20&&x.measureText(t).width>maxW);x.fillText(t,X,Y)}
+function ctext(x,t,X,Y,size,w,col,maxW){if(!t)return;x.fillStyle=col;x.textAlign='center';x.textBaseline='middle';let s=size;do{x.font=`${w} ${s}px ${FONT}`;s-=2}while(s>18&&x.measureText(t).width>maxW);x.fillText(t,X,Y,maxW)}
+function cicon(x,im,cx,cy,r,col){x.save();x.beginPath();x.arc(cx,cy,r,0,7);x.clip();x.fillStyle='#fff';x.fillRect(cx-r,cy-r,r*2,r*2);
+  if(im){const s=Math.max(r*2/im.naturalWidth,r*2/im.naturalHeight),dw=im.naturalWidth*s,dh=im.naturalHeight*s;x.drawImage(im,cx-dw/2,cy-dh/2,dw,dh)}x.restore();
+  x.save();x.beginPath();x.arc(cx,cy,r+3,0,7);x.lineWidth=6;x.strokeStyle=col;x.stroke();x.restore()}
+async function iconSrc(d){if(!d)return null;if(d.icon)return d.icon;const r=recsOf(d.id)[0],id=r?cover(r):null;return id?(await getImg(id)):null}
 let ATOK=0;
-async function aDraw(){const cv=$('#acv');if(!cv)return;const tok=++ATOK;const es=M.sel.map(entryOf).filter(Boolean),ims=[];
-  for(const e of es){const s=await srcOf(e);ims.push(s?await loadSrc(s).catch(()=>null):null)}if(tok!==ATOK)return;
-  const[,W,H]=SHAPES[M.shape];cv.width=W;cv.height=H;const x=cv.getContext('2d'),t=String(M.title||'').trim(),n=aName();
-  if(M.kind==='xmas'){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1f5c3a');g.addColorStop(1,'#0e3321');x.fillStyle=g;x.fillRect(0,0,W,H);
-    const cols=['#ff5b5b','#ffd84d','#6fd3ff','#ffffff'];for(let i=0;i<18;i++){const px=30+i*(W-60)/17,py=60+Math.sin(i*0.9)*22;x.fillStyle=cols[i%4];x.beginPath();x.arc(px,py,11,0,7);x.fill()}
-    const top=170,bh=H-top-230,pw=W-160;x.fillStyle='#c0392b';x.fillRect(80-18,top-18,pw+36,bh+36);cphoto(x,ims[0],80,top,pw,bh);
-    for(const[hx,hy]of[[90,top+10],[W-90,top+bh-10]]){x.fillStyle='#2e8b57';x.beginPath();x.ellipse(hx-22,hy,26,14,0.5,0,7);x.ellipse(hx+22,hy,26,14,-0.5,0,7);x.fill();x.fillStyle='#e53935';[[-8,-6],[8,-6],[0,8]].forEach(([a,b])=>{x.beginPath();x.arc(hx+a,hy+b,9,0,7);x.fill()})}
-    ctext(x,t,W/2,H-140,76,'bold','#fff',W-120);if(n)ctext(x,'from '+n,W/2,H-62,40,'normal','#ffd84d',W-120)}
-  else if(M.kind==='ny'){x.fillStyle='#fbf5e6';x.fillRect(0,0,W,H);x.strokeStyle='#c0392b';x.lineWidth=28;x.strokeRect(14,14,W-28,H-28);x.strokeStyle='#c9a227';x.lineWidth=4;x.strokeRect(44,44,W-88,H-88);
-    const d=new Date(),yr=d.getMonth()>=9?d.getFullYear()+1:d.getFullYear();ctext(x,String(yr),W/2,120,64,'bold','#c0392b',W-160);
-    const top=180,bh=H-top-260;cphoto(x,ims[0],90,top,W-180,bh);
-    const plum=(px,py)=>{x.fillStyle='#e8758f';for(let i=0;i<5;i++){const a=i*Math.PI*2/5;x.beginPath();x.arc(px+Math.cos(a)*16,py+Math.sin(a)*16,13,0,7);x.fill()}x.fillStyle='#c9a227';x.beginPath();x.arc(px,py,7,0,7);x.fill()};
-    plum(110,top-10);plum(W-110,top+bh+10);
-    ctext(x,t,W/2,H-170,68,'bold','#333',W-160);ctext(x,'今年もよろしくお願いします',W/2,H-95,40,'normal','#c0392b',W-160)}
-  else{const st=STYLES[M.style]||STYLES[0];x.fillStyle=st.bg;x.fillRect(0,0,W,H);ctext(x,t,W/2,90,64,'bold',st.text,W-80);
-    let sub='';if(M.kind==='grow'&&es.length){const ds=es.map(e=>e.date).filter(Boolean).sort();if(ds.length)sub=fmtDate(ds[0])+' → '+fmtDate(ds[ds.length-1])}
-    if(M.kind==='year'){const c=S.records.filter(r=>(!Z.dog||r.dogId===Z.dog)&&(M.per==='all'||(r.date||'').startsWith(M.per))).length;sub='トリミング '+c+'回'}
-    ctext(x,sub,W/2,160,40,'normal',st.text,W-80);
-    const k=ims.length,cols=k<=1?1:k<=4?2:3,rows=Math.max(1,Math.ceil(k/cols)),gap=14,top=210,bot=H-80,cw=(W-80-gap*(cols-1))/cols,ch=(bot-top-gap*(rows-1))/rows;
-    ims.forEach((im,i)=>cphoto(x,im,40+(i%cols)*(cw+gap),top+Math.floor(i/cols)*(ch+gap),cw,ch));
-    x.globalAlpha=.6;ctext(x,APP_NAME,W/2,H-40,28,'bold',st.text,W);x.globalAlpha=1}}
-async function mshare(){const cv=$('#acv');if(!cv)return;await aDraw();const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.92));if(!b)return toast('画像を作れませんでした');
-  const tags={xmas:['#クリスマス','#犬のいる暮らし'],ny:['#お正月','#年賀状','#犬のいる暮らし'],grow:['#成長記録','#犬のいる暮らし'],year:['#1年まとめ','#トリミング']}[M.kind];
-  copyText([...tags,APP_TAG].join('\n')).then(ok=>{if(ok)toast('ハッシュタグをコピーしました')});shareFiles([new File([b],'album.jpg',{type:'image/jpeg'})])}
+async function aDraw(){const cv=$('#acv');if(!cv)return;const tok=++ATOK;
+  const es=M.sel.map(entryOf).filter(Boolean).sort((a,b)=>(a.date||'').localeCompare(b.date||'')),ims=[];
+  for(const e of es){const s=await srcOf(e);ims.push(s?await loadSrc(s).catch(()=>null):null);if(tok!==ATOK)return}
+  const icd=await iconSrc(albumDog());const icIm=icd?await loadSrc(icd).catch(()=>null):null;if(tok!==ATOK)return;
+  const[,W,H]=SHAPES[M.shape];cv.width=W;cv.height=H;const x=cv.getContext('2d'),t=String(M.title||'').trim(),st=STYLES[M.style]||STYLES[0];
+  x.fillStyle=st.bg;x.fillRect(0,0,W,H);let top=40;
+  const ir=Math.round(W*0.075);
+  if(icIm){cicon(x,icIm,W/2,top+ir,ir,st.label);top+=ir*2+14}
+  if(t){ctext(x,t,W/2,top+38,62,'bold',st.text,W-80);top+=84}
+  const ds=es.map(e=>e.date).filter(Boolean);
+  if(ds.length){const sub=(ds[0]!==ds[ds.length-1]?fmtDate(ds[0])+' → '+fmtDate(ds[ds.length-1]):fmtDate(ds[0]))+'　'+es.length+'枚';ctext(x,sub,W/2,top+16,34,'normal',st.text,W-80);top+=54}
+  top+=14;const k=ims.length,gap=k>24?6:k>12?8:14,L=40,bot=H-80,aw=W-80,ah=Math.max(160,bot-top);
+  let best={c:1,s:0};for(let c=1;c<=10;c++){const r=Math.ceil(Math.max(k,1)/c),cw=(aw-gap*(c-1))/c,ch=(ah-gap*(r-1))/r,s=Math.min(cw,ch);if(s>best.s)best={c,s}}
+  const cols=best.c,rows=Math.max(1,Math.ceil(k/cols)),cw=(aw-gap*(cols-1))/cols,ch=(ah-gap*(rows-1))/rows;
+  ims.forEach((im,i)=>{const r=Math.floor(i/cols),inRow=Math.min(cols,k-r*cols);let X=L+(i%cols)*(cw+gap);if(inRow<cols)X+=(cols-inRow)*(cw+gap)/2;const Y=top+r*(ch+gap);
+    cphoto(x,im,X,Y,cw,ch);
+    if(M.dt&&es[i]&&es[i].date){const fs=Math.max(16,Math.min(30,cw/7)),tx=fmtDate(es[i].date);x.font=`bold ${fs}px ${FONT}`;const tw=Math.min(x.measureText(tx).width+fs,cw);
+      x.fillStyle='rgba(0,0,0,.55)';x.fillRect(X,Y+ch-fs*1.5,tw,fs*1.5);x.fillStyle='#fff';x.textAlign='left';x.textBaseline='middle';x.fillText(tx,X+fs/2,Y+ch-fs*0.75,cw-fs)}});
+  if(!k)ctext(x,'下から写真を選んでください',W/2,(top+bot)/2,40,'normal',st.text,W-80);
+  x.globalAlpha=.6;ctext(x,APP_NAME,W/2,H-40,28,'bold',st.text,W);x.globalAlpha=1}
+async function mshare(){const cv=$('#acv');if(!cv)return;await aDraw();if(!M.sel.length)return toast('写真を選んでください');
+  const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.92));if(!b)return toast('画像を作れませんでした');
+  copyText(['#成長記録','#犬のいる暮らし',APP_TAG].join('\n')).then(ok=>{if(ok)toast('ハッシュタグをコピーしました')});
+  shareFiles([new File([b],'album.jpg',{type:'image/jpeg'})])}
 /* ===== お気に入り ===== */
 const FF={img:'お気に入りの写真',before:'ビフォーの写真',memo:'お願いした内容',dog:'ワンちゃん',shop:'お店',staff:'担当者',menu:'やったこと',date:'来店日',price:'金額',score:'点数',cond:'体調'};
 const FDEF=['img','memo','shop','staff','date'];
