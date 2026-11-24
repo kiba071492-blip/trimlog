@@ -898,7 +898,7 @@ function mtog(k){const i=M.sel.indexOf(k);if(i>=0)M.sel.splice(i,1);else if(M.se
 function mall(){M.sel=pick(MAXA);M.cleared=false;render()}
 function mclear(){M.sel=[];M.cleared=true;render()}
 V.xamake=()=>{const key=M.per+'|'+Z.dog+'|'+Z.flt;if(M.key!==key){M.key=key;M.sel=[];M.cleared=false}
-  if(!M.sel.length&&!M.cleared)M.sel=pick(16);if(!M.title&&!M.edited)M.title=defTitleA();if(M.dt==null)M.dt=true;
+  if(!M.sel.length&&!M.cleared)M.sel=pick(16);if(M.title==null)M.title='';if(M.dt==null)M.dt=true;if(M.icon==null)M.icon=true;
   const sg=(o,cur,k)=>`<div class="seg sm" style="margin-top:6px">${Object.entries(o).map(([v,l])=>`<button class="${v===cur?'on':''}" onclick="mset('${k}','${v}')">${esc(Array.isArray(l)?l[0]:l)}</button>`).join('')}</div>`;
   const pers={all:'すべて'};years().forEach(y=>pers[y]=y+'年');
   const cnt=pool().length,all=cnt<=MAXA;
@@ -908,8 +908,9 @@ V.xamake=()=>{const key=M.per+'|'+Z.dog+'|'+Z.flt;if(M.key!==key){M.key=key;M.se
 <div class="xl">並び順</div>${sg({old:'古い順',new:'新しい順',sel:'選んだ順'},M.order,'order')}
 <div class="xl">写真の間隔</div>${sg({tight:'つめる',normal:'ふつう',loose:'ひろげる'},M.gap,'gap')}
 <div class="xl">色</div><div class="sws">${STYLES.map((s,i)=>`<button class="sw ${i===M.style?'on':''}" onclick="mset('style','${i}')"><i style="background:${s.bg}"></i>${esc(s.name)}</button>`).join('')}</div>
-<div class="xl">タイトル（空欄なら出ません）</div><input value="${esc(M.title)}" oninput="M.title=this.value;M.edited=true;aDraw()">
-<label class="xck" style="margin-top:14px"><input type="checkbox" ${M.dt?'checked':''} onchange="M.dt=this.checked;aDraw()">写真に日付を入れる</label></div>
+<label class="xck" style="margin-top:14px"><input type="checkbox" ${M.icon?'checked':''} onchange="M.icon=this.checked;aPaint()">ワンちゃんの写真を上に表示する</label>
+<div class="xl">タイトル（空欄なら出ません）</div><input value="${esc(M.title)}" oninput="M.title=this.value;M.edited=true;aPaint()" placeholder="例：モカのアルバム">
+<label class="xck" style="margin-top:14px"><input type="checkbox" ${M.dt?'checked':''} onchange="M.dt=this.checked;aPaint()">写真に日付を入れる</label></div>
 <div class="card" style="padding:10px"><canvas id="acv"></canvas><p class="muted" style="text-align:center;margin:8px 0 0">写真をタップして選び、指で動かせます。2本指で拡大・縮小（${M.sel.length}枚 / 全${cnt}枚）</p>
 <div class="row" style="margin-top:8px"><button class="btn sub small" onclick="aZoom(-0.3)">− 小さく</button><button class="btn sub small" onclick="aZoom(0.3)">＋ 大きく</button><button class="btn sub small" onclick="aClearCrop()">位置を戻す</button></div></div>
 <div class="sec">のせる写真（${MAXA}枚まで）</div>${dogChips()}<div class="fltrow">${fltChips({noFav:1})}</div><div class="fltrow">${chipOf('fav')}</div>
@@ -946,7 +947,7 @@ function aPaint(){const cv=$('#acv');if(!cv)return;
   const x=cv.getContext('2d'),t=String(M.title||'').trim();
   x.fillStyle=st.bg;x.fillRect(0,0,W,H);let top=40;
   const ir=Math.round(W*0.075);
-  if(M._icon){cicon(x,M._icon,W/2,top+ir,ir,st.label);top+=ir*2+14}
+  if(M.icon&&M._icon){cicon(x,M._icon,W/2,top+ir,ir,st.label);top+=ir*2+14}
   if(t){ctext(x,t,W/2,top+38,62,'bold',st.text,W-80);top+=84}
   top+=18;
   const k=ims.length,L=40,bot=H-80,aw=W-80,ah=Math.max(160,bot-top);
